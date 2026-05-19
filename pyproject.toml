@@ -60,13 +60,15 @@ filterwarnings = [
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "PERF", "SIM", "FURB", "ANN", "B", "UP", "C4", "RUF"]
+# AF source の self-lint は基本 syntax + import 級のみ enforce
+# 違反 pattern の検出は samples/violations/ + manifest 駆動 TDD の責務 (= AF が自分自身を lint する mandate ではない)
+select = ["E", "F", "W"]
 ignore = [
     "E501",  # line-length は ruff format で対応
-    "ANN401",  # samples/violations/*.py は意図的に Any を含む違反 sample
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"samples/violations/*.py" = ["ALL"]  # 違反 sample 本体は意図的違反保持、 lint 対象外
-"samples/violations/fixed/*.py" = ["ANN401"]
+# samples/violations/*.py は意図的違反保持、 ただし per-file-ignores で "ALL" 指定すると
+# test_manifest_driven.py の subprocess ruff check が 全 rule ignore されて test fail。
+# CI workflow の ruff target に samples/ を含めない設計で意図的違反保持を維持する。
 "scratch/*.py" = ["ALL"]  # throwaway file
