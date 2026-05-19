@@ -43,6 +43,19 @@ A/B measurement automated via `claude --print` nested sessions:
 
 Both niches clear Phase 1 withdrawal criterion (`pass@1 +5%`) = AF effectiveness substantiated.
 
+## Is this the right tool for you? (applicability matrix)
+
+AF occupies a specialized niche in the Claude Code hook ecosystem. Honest scope articulation so you can pick the right tool for your situation:
+
+| Your situation | Recommended tool |
+|---|---|
+| Want only Layer 1 (ruff PERF/SIM/FURB/ANN/F lint hook), multi-language (Python / JS / TS / Go / Rust) | [claude-code-quality-hook](https://github.com/dhofheinz/claude-code-quality-hook) — Layer 1 specialist with 3-stage auto-fix pipeline |
+| Want Layer 1 **+ algebraic-law PBT auto-generation (Layer 2) + data-movement feedback (Layer 3)** integrated for Python | **algebraic-filter** (this repo) |
+| Want generic auto-format / test-runner / traceback compaction hooks | [claude-tools](https://github.com/tarekziade/claude-tools), [disler/claude-code-hooks-mastery](https://github.com/disler/claude-code-hooks-mastery), or the official [hooks guide](https://code.claude.com/docs/en/hooks-guide) |
+| Targeting C / Frama-C ACSL specs | [VeCoGen](https://github.com/VeCoGen/VeCoGen) (independent niche, not Python) |
+
+AF's differentiation is **the combination of Layer 2 (13 algebraic laws, auto-generated from function signatures) + Layer 3 (tracemalloc data-movement) + Claude Code hook integration**, which is unique in the public hook ecosystem at the time of this writing. If you only need Layer 1, the alternatives above are simpler and more battle-tested.
+
 ## Install
 
 ```bash
