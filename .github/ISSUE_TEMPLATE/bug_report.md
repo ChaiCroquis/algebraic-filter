@@ -40,6 +40,6 @@ What actually happened? / 実際に何が起きましたか?
 
 ## Checklist
 
-- [ ] I read [docs/troubleshooting.en.md](https://github.com/ChaiCroquis/algebraic-filter/blob/main/docs/troubleshooting.en.md) or [docs/troubleshooting.md](https://github.com/ChaiCroquis/algebraic-filter/blob/main/docs/troubleshooting.md) — common defects (Windows path mangling / Scalpel typed-ast / memray Windows / session reload / auto-mode classifier) are covered there
+- [ ] I read [docs/troubleshooting.md](https://github.com/ChaiCroquis/algebraic-filter/blob/main/docs/troubleshooting.md) or [docs/troubleshooting.md](https://github.com/ChaiCroquis/algebraic-filter/blob/main/docs/troubleshooting.md) — common defects (Windows path mangling / Scalpel typed-ast / memray Windows / session reload / auto-mode classifier) are covered there
 - [ ] I verified locally with `pytest samples/violations/tests/` before reporting
 - [ ] I attached relevant logs / stack traces

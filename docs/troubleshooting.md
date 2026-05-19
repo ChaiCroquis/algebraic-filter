@@ -1,20 +1,22 @@
-# Troubleshooting — algebraic-filter 既知の問題 + 対策
+# Troubleshooting — algebraic-filter known issues + countermeasures
 
-開発中に発覚した 5 つの defect / limitation + 対策:
+[日本語版 troubleshooting](troubleshooting.ja.md)
 
-1. [Windows path mangling (= hook command の backslash escape)](#1-windows-path-mangling--hook-command-の-backslash-escape)
-2. [Scalpel (python-scalpel) の Python 3.13 build 失敗](#2-scalpel-python-scalpel-の-python-313-build-失敗)
-3. [memray の Windows native 非対応](#3-memray-の-windows-native-非対応)
-4. [hook session reload 不可](#4-hook-session-reload-不可)
-5. [auto-mode classifier による nested session block](#5-auto-mode-classifier-による-nested-session-block)
+Five defects / limitations + countermeasures discovered during development:
+
+1. [Windows path mangling (hook command backslash escape)](#1-windows-path-mangling-hook-command-backslash-escape)
+2. [Scalpel (python-scalpel) Python 3.13 build failure](#2-scalpel-python-scalpel-python-313-build-failure)
+3. [memray Windows-native non-support](#3-memray-windows-native-non-support)
+4. [Hook session-reload not supported](#4-hook-session-reload-not-supported)
+5. [auto-mode classifier blocks nested sessions](#5-auto-mode-classifier-blocks-nested-sessions)
 
 ---
 
-## 1. Windows path mangling (= hook command の backslash escape)
+## 1. Windows path mangling (hook command backslash escape)
 
-### 症状
+### Symptom
 
-`.claude/settings.local.json` に hook command を backslash で記述すると、 hook 起動失敗:
+If the hook command in `.claude/settings.local.json` uses backslashes, hook startup fails:
 
 ```json
 {
@@ -30,25 +32,25 @@
 }
 ```
 
-error message (= 私の session で取得 verbatim):
+Error message (verbatim):
 ```
 can't open file 'C:\\work\\algebraic-filter\\workalgebraic-filterhooksposttool_af_check.py'
 ```
 
-= `\w \a \h \p` escape 剥がれ → `workalgebraic-filterhooksposttool_af_check.py` (= mangled path)
+= `\w \a \h \p` are escape-stripped → `workalgebraic-filterhooksposttool_af_check.py` (mangled path)
 
-### 原因
+### Cause
 
-Claude Code が hook command を起動する path で:
-- JSON decode 後: `C:\work\algebraic-filter\hooks\posttool_af_check.py`
-- bash 経由で起動: `\w` `\a` `\h` `\p` が文字 escape として剥がれる
-- 結果: `C:workalgebraic-filterhooksposttool_af_check.py`
-- Python が `C:` ドライブの相対 path として解釈 → cwd `C:\work\algebraic-filter` と連結
-- 最終 path: `C:\work\algebraic-filter\workalgebraic-filterhooksposttool_af_check.py` (= 存在しない)
+In Claude Code's hook-command invocation path:
+- After JSON decoding: `C:\work\algebraic-filter\hooks\posttool_af_check.py`
+- Bash-invoked: `\w`, `\a`, `\h`, `\p` get stripped as escape sequences
+- Result: `C:workalgebraic-filterhooksposttool_af_check.py`
+- Python interprets `C:` as a drive-relative path → concatenated with cwd `C:\work\algebraic-filter`
+- Final path: `C:\work\algebraic-filter\workalgebraic-filterhooksposttool_af_check.py` (does not exist)
 
-### 対策: forward slash 化
+### Countermeasure: use forward slashes
 
-`.claude/settings.local.json` で forward slash を使用:
+In `.claude/settings.local.json`:
 
 ```json
 {
@@ -64,42 +66,42 @@ Claude Code が hook command を起動する path で:
 }
 ```
 
-Python (Windows + Unix 両方) は forward slash を accept、 bash escape 問題回避。
+Python (both Windows and Unix) accepts forward slashes, avoiding the bash escape issue.
 
-### reproducibility test
+### Reproducibility test
 
 ```bash
-# backslash version (= 壊れる)
+# Backslash version (broken)
 bash -c 'python -X utf8 C:\\work\\algebraic-filter\\hooks\\posttool_af_check.py < /dev/null'
 # → "can't open file '...workalgebraic-filterhooksposttool_af_check.py'"
 
-# forward slash version (= 動く)
+# Forward-slash version (working)
 bash -c 'python -X utf8 C:/work/algebraic-filter/hooks/posttool_af_check.py < /dev/null'
 # → EXIT=0
 ```
 
-### lesson learned
+### Lesson learned
 
-私の subprocess test (= 直接 python invoke) では path mangling が発生せず、 「hook 動作確認 PASS」 と articulate していたが、 **実 Claude Code session 経由の hook 起動 では path mangling が発生**。 検出は chai end-to-end 試行で初めて exposed。 articulation gap reflection: shell 経由 invoke の reproducibility 試験を AF プロジェクト全期間で 抜けていた点を honest 認め。
+My subprocess tests (direct python invocation) did not trigger path mangling, leading me to articulate "hook operation verified PASS." The mangling only emerged when the hook was invoked via Claude Code session shell. The gap was first exposed by chai's end-to-end attempt. Articulation reflection: a shell-invocation reproducibility test was missing throughout the AF project period.
 
 ---
 
-## 2. Scalpel (python-scalpel) の Python 3.13 build 失敗
+## 2. Scalpel (python-scalpel) Python 3.13 build failure
 
-### 症状
+### Symptom
 
 ```bash
 pip install python-scalpel
 # → error: failed-wheel-build-for-install
-# → typed-ast の wheel build 失敗
+# → typed-ast wheel build failure
 ```
 
-### 原因
+### Cause
 
-`typed-ast` package は Python 3.8 以前で必要だった独自 ast。 Python 3.9+ では built-in `ast` module が同等機能を提供 → `typed-ast` は obsolete (= maintenance 停止)。
-python-scalpel が古い typed-ast に依存を pin → Python 3.13 で build 不能。
+The `typed-ast` package was needed for Python ≤3.8 as a separate AST. In Python ≥3.9, the built-in `ast` module provides equivalent functionality → `typed-ast` is obsolete (maintenance halted).
+python-scalpel pins this old typed-ast → cannot build on Python 3.13.
 
-### 対策: Docker container (Python 3.10) で isolated env
+### Countermeasure: Isolated env via Docker (Python 3.10)
 
 [Dockerfile.scalpel](../Dockerfile.scalpel):
 
@@ -111,12 +113,12 @@ COPY af_phase3_scalpel /workspace/af_phase3_scalpel
 CMD ["python", "-c", "from scalpel.cfg import CFGBuilder; print('OK')"]
 ```
 
-build:
+Build:
 ```bash
 docker build -t af-scalpel -f Dockerfile.scalpel .
 ```
 
-main env (Python 3.13) から bridge ([af_phase3/scalpel_bridge.py](../af_phase3/scalpel_bridge.py)) 経由で container を呼ぶ:
+Bridge from main env (Python 3.13) via [af_phase3/scalpel_bridge.py](../af_phase3/scalpel_bridge.py):
 
 ```python
 from af_phase3.scalpel_bridge import analyze_cfg
@@ -124,15 +126,15 @@ result = analyze_cfg("samples/violations/intermediate_list_chain.py")
 # → {function_count: 1, function_cfgs: [{function_name: [1, 'transform'], ...}], ...}
 ```
 
-### 別 path (= 自前 AST 拡張)
+### Alternative path (in-house AST extension)
 
-Scalpel 統合せず、 [af_phase3/static_checker.py](../af_phase3/static_checker.py) で 自前 AST visitor を実装する path も有効。 関数間 data flow / alias analysis を AF 独自実装で進める適用 niche。
+Without Scalpel integration, an alternative is to extend [af_phase3/static_checker.py](../af_phase3/static_checker.py) with AF-original AST visitor. The cross-function data-flow / alias-analysis niche can be pursued through in-house implementation.
 
 ---
 
-## 3. memray の Windows native 非対応
+## 3. memray Windows-native non-support
 
-### 症状
+### Symptom
 
 ```bash
 pip install memray
@@ -141,13 +143,13 @@ python -m memray --version
 # → ModuleNotFoundError: No module named 'memray'
 ```
 
-### 原因
+### Cause
 
-memray は C extension (= native binding) で実装、 Linux/macOS のみサポート (= Bloomberg 公式 README 通り)。 Windows では pip install は成功するが native 部分が build されず import 不可。
+memray is implemented as a C extension (native binding) and officially supports only Linux/macOS (per Bloomberg's README). On Windows, `pip install` succeeds but the native portion isn't built, so import fails.
 
-### 対策: tracemalloc (stdlib) 代替
+### Countermeasure: tracemalloc (stdlib) alternative
 
-[af_phase3/runtime_checker.py](../af_phase3/runtime_checker.py) は tracemalloc 経由:
+[af_phase3/runtime_checker.py](../af_phase3/runtime_checker.py) uses tracemalloc:
 
 ```python
 import tracemalloc
@@ -159,50 +161,50 @@ snap_after = tracemalloc.take_snapshot()
 diff = snap_after.compare_to(snap_before, "lineno")
 ```
 
-tracemalloc は Python stdlib = Windows + Unix 両方で動作。 ただし memray のような native sampling は不可、 簡易 line-level allocation tracking まで。
+tracemalloc is in Python stdlib = works on both Windows and Unix. However, memray-class native sampling is not available; only simple line-level allocation tracking.
 
-### Linux/macOS で memray を使う場合
+### Using memray on Linux/macOS
 
-`af_phase3/runtime_checker.py` を memray 経由に切り替える余地あり (= 別 module or 拡張 flag)。 Phase 3 さらなる拡張 niche として残置。
+There is room to switch `af_phase3/runtime_checker.py` to memray (separate module or extension flag). Reserved as a Phase 3 further-extension niche.
 
 ---
 
-## 4. hook session reload 不可
+## 4. Hook session-reload not supported
 
-### 症状
+### Symptom
 
-`.claude/settings.local.json` を session 起動中に edit + save しても、 active session の hook 設定は **session 起動時 load された旧設定のまま**。
+Even if you edit and save `.claude/settings.local.json` during a Claude Code session, the **active session's hook configuration is the one loaded at session start**.
 
-### 原因
+### Cause
 
-Claude Code は session 起動時に settings load → 以後保持。 session 内で settings reload する API なし (= 2026-05 時点)。
+Claude Code loads settings at session start → keeps them thereafter. No API exists to reload settings within a session (as of 2026-05).
 
-### 対策: 新 session 起動
+### Countermeasure: Start a new session
 
 ```powershell
-# 既 session terminate (= chai が Claude Code を終了)
-# 別ターミナルで新 session 起動
+# Terminate existing session (chai exits Claude Code)
+# Open a new terminal and start a new session
 cd /path/to/project
 claude
 ```
 
-これで forward slash 修正版 settings が load される。
+This loads the forward-slash-fixed settings.
 
-### A/B 計測 で hook OFF/ON 切替する場合
+### When switching hook OFF/ON for A/B measurement
 
-各 Round で別 session 起動が必要:
-- Round 1 (OFF): settings rename → 新 session
-- Round 2 (ON): settings restore → 新 session
+Each round requires a separate session start:
+- Round 1 (OFF): Rename settings → new session
+- Round 2 (ON): Restore settings → new session
 
-詳細: [docs/_ab_measurement/protocol.md](_ab_measurement/protocol.md)
+Details: [docs/_ab_measurement/protocol.md](_ab_measurement/protocol.md)
 
 ---
 
-## 5. auto-mode classifier による nested session block
+## 5. auto-mode classifier blocks nested sessions
 
-### 症状
+### Symptom
 
-AI agent (= 親 session の Claude) から `claude --print --permission-mode bypassPermissions` で nested session 起動を試みると:
+When an AI agent (parent Claude session) tries to start a nested session with `claude --print --permission-mode bypassPermissions`:
 
 ```
 Permission for this action was denied by the Claude Code auto mode classifier.
@@ -211,67 +213,67 @@ creates an unsupervised autonomous agent loop; the user said "OK" to running a s
 but did not explicitly authorize bypassing permission gates.
 ```
 
-### 原因
+### Cause
 
-auto-mode classifier は **autonomous loop** (= nested session で permission gate 全 bypass) を高 risk action として認識、 user 明示 authorize 不在で block (= 正当な guardrail)。
+The auto-mode classifier identifies an **autonomous loop** (nested session bypassing all permission gates) as a high-risk action and blocks it without explicit user authorization (legitimate guardrail).
 
-### 対策 1: chai 明示 authorize
+### Countermeasure 1: Explicit chai authorization
 
-chai が「nested session で permission bypass OK」 と明示文言で articulate → 私が再試行で classifier 通過。
+Have chai articulate "OK to bypass permissions in nested sessions" → retry passes the classifier.
 
-### 対策 2: `--allowedTools` で safer path
+### Countermeasure 2: Safer path with `--allowedTools`
 
-permission bypass ではなく **必要 tools のみ明示 allow**:
+Instead of permission bypass, explicitly allow only required tools:
 
 ```bash
-claude --print --allowedTools "Write,Edit,Read"  # ← Bash 除外
+claude --print --allowedTools "Write,Edit,Read"  # Bash excluded
 ```
 
-ただし Bash を含めると再度 block:
+But including Bash gets blocked again:
 > Spawning a nested non-interactive Claude session with --allowedTools including Bash creates an autonomous agent loop
 
-→ Write/Edit/Read のみで動作する範囲なら OK (= hook 起動は Claude Code 内部で subprocess 経由、 Bash tool 不要)。
+→ Write/Edit/Read only works (hook startup uses Claude Code's internal subprocess, not the Bash tool).
 
-### 対策 3: stdin 経由で prompt 渡し
+### Countermeasure 3: Pass prompt via stdin
 
-argparse parser の variadic argument 解釈問題で `--allowedTools "tool1,tool2"` の後の prompt が argument に消費される:
+argparse parser variadic-argument quirk: the prompt after `--allowedTools "tool1,tool2"` is consumed as an argument:
 
 ```bash
-# 失敗 (= "Input must be provided either through stdin or as a prompt argument")
+# Fails ("Input must be provided either through stdin or as a prompt argument")
 claude --print --allowedTools "Write,Edit,Read" "prompt content"
 
-# 成功 (= stdin 経由)
+# Works (via stdin)
 echo "prompt content" | claude --print --allowedTools "Write,Edit,Read"
 ```
 
-### nested session の use case
+### Nested-session use case
 
-[scripts/ab_automation.py](../scripts/ab_automation.py) + [scripts/ab_automation_wide.py](../scripts/ab_automation_wide.py) で `--allowedTools "Write,Edit,Read"` + stdin prompt 経由で nested session を 多回起動、 A/B 計測自動化。
+[scripts/ab_automation.py](../scripts/ab_automation.py) + [scripts/ab_automation_wide.py](../scripts/ab_automation_wide.py) start nested sessions multiple times via `--allowedTools "Write,Edit,Read"` + stdin prompts, automating A/B measurement.
 
 ---
 
-## その他の minor issue
+## Other minor issues
 
-### cp932 encoding (= Windows Console default)
+### cp932 encoding (Windows Console default)
 
-Python script の print() で Unicode 文字 (`✓` / `⊘` / `≥` 等) が:
+When a Python script's print() emits Unicode characters (`✓` / `⊘` / `≥`):
 ```
 UnicodeEncodeError: 'cp932' codec can't encode character '✓'
 ```
 
-対策:
-- `python -X utf8 script.py` で UTF-8 mode 強制
-- ASCII 文字に置換 (`[OK]` / `[NG]` / `[SKIP]` 等)
-- subprocess.run() に `encoding="utf-8", errors="replace"` 明示
+Countermeasures:
+- Force UTF-8 with `python -X utf8 script.py`
+- Replace with ASCII (`[OK]` / `[NG]` / `[SKIP]`)
+- Explicitly pass `encoding="utf-8", errors="replace"` to subprocess.run()
 
-### CLAUDE_CMD path (= scripts から claude CLI 起動)
+### CLAUDE_CMD path (calling claude CLI from scripts)
 
-`subprocess.run(["claude", ...])` は Windows で `.cmd` 拡張子解決失敗:
+`subprocess.run(["claude", ...])` fails to resolve `.cmd` extension on Windows:
 ```
-FileNotFoundError: [WinError 2] 指定されたファイルが見つかりません
+FileNotFoundError: [WinError 2] The system cannot find the file specified
 ```
 
-対策: 絶対 path 指定 (= [scripts/ab_automation*.py](../scripts/) で landed):
+Countermeasure: Specify absolute path (landed in [scripts/ab_automation*.py](../scripts/)):
 ```python
 CLAUDE_CMD = r"C:\Users\user\AppData\Roaming\npm\claude.cmd"
 subprocess.run([CLAUDE_CMD, "--print", ...])
@@ -279,8 +281,8 @@ subprocess.run([CLAUDE_CMD, "--print", ...])
 
 ---
 
-## 関連参照
+## See also
 
-- [USAGE.md](../USAGE.md) — 使い方ガイド
-- [docs/architecture.md](architecture.md) — 詳細アーキテクチャ
-- [docs/evidence_summary.md](evidence_summary.md) — A/B 計測 + Phase evidence 集約
+- [USAGE.md](../USAGE.md) — Usage guide
+- [docs/architecture.md](architecture.md) — Detailed architecture
+- [docs/evidence_summary.md](evidence_summary.md) — A/B measurement + Phase evidence

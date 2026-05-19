@@ -65,6 +65,6 @@ python -m ruff check --select=<category> samples/violations/<id>.py
 
 ## Checklist
 
-- [ ] I read [CONTRIBUTING.en.md §1](https://github.com/ChaiCroquis/algebraic-filter/blob/main/CONTRIBUTING.en.md#1-adding-violation-samples-most-common-contribution) — the 3-step + 1 test partition procedure
+- [ ] I read [CONTRIBUTING.md §1](https://github.com/ChaiCroquis/algebraic-filter/blob/main/CONTRIBUTING.md#1-adding-violation-samples-most-common-contribution) — the 3-step + 1 test partition procedure
 - [ ] ID does not collide with existing 46 samples in [manifest.json](https://github.com/ChaiCroquis/algebraic-filter/blob/main/samples/violations/manifest.json)
 - [ ] I'm willing to submit a PR with sample + ground truth + manifest entry (3 file pair)

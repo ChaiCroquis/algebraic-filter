@@ -8,8 +8,8 @@ What does this PR do? / この PR は何をしますか?
 
 - [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
 - [ ] ✨ New feature (non-breaking change that adds functionality)
-- [ ] 🧪 New violation sample (manifest-driven TDD growth, see [CONTRIBUTING §1](../CONTRIBUTING.en.md#1-adding-violation-samples-most-common-contribution))
-- [ ] 📐 New law template / detection rule (see [CONTRIBUTING §2-3](../CONTRIBUTING.en.md))
+- [ ] 🧪 New violation sample (manifest-driven TDD growth, see [CONTRIBUTING §1](../CONTRIBUTING.md#1-adding-violation-samples-most-common-contribution))
+- [ ] 📐 New law template / detection rule (see [CONTRIBUTING §2-3](../CONTRIBUTING.md))
 - [ ] 📚 Documentation update
 - [ ] 🏗️ Refactor / chore (non-breaking, internal)
 - [ ] 💥 Breaking change (would cause existing functionality to not work as expected)
@@ -52,7 +52,7 @@ For violation samples / law templates: paste the detection evidence (e.g. ruff o
 
 ## Checklist
 
-- [ ] I read [CONTRIBUTING.en.md](../CONTRIBUTING.en.md) (or [CONTRIBUTING.md](../CONTRIBUTING.md))
+- [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md) (or [CONTRIBUTING.md](../CONTRIBUTING.md))
 - [ ] My code follows the project's style (ruff E/F/W on CI target packages)
 - [ ] I added tests where applicable (= manifest entry auto-grows test count for sample additions)
 - [ ] I updated documentation where relevant

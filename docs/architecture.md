@@ -1,164 +1,169 @@
-# Architecture — algebraic-filter 詳細
+# Architecture — algebraic-filter detailed
 
-AF の設計を 4 軸で articulate:
+[日本語版 architecture](architecture.ja.md)
 
-1. [二層構造: philosophy filter + algebraic-filter](#1-二層構造-philosophy-filter--algebraic-filter)
-2. [3 層検証パイプライン](#2-3-層検証パイプライン)
-3. [AET-OS Verified Orchestrator Pattern Layer 3 として](#3-aet-os-verified-orchestrator-pattern-layer-3-として)
-4. [Phase 0 〜 Phase 5 の構成 mapping](#4-phase-0--phase-5-の構成-mapping)
+AF design articulated across four axes:
+
+1. [Two-layer structure: philosophy filter + algebraic-filter](#1-two-layer-structure-philosophy-filter--algebraic-filter)
+2. [3-layer verification pipeline](#2-3-layer-verification-pipeline)
+3. [As AET-OS Verified Orchestrator Pattern Layer 3](#3-as-aet-os-verified-orchestrator-pattern-layer-3)
+4. [Phase 0 – Phase 5 composition mapping](#4-phase-0--phase-5-composition-mapping)
 
 ---
 
-## 1. 二層構造: philosophy filter + algebraic-filter
+## 1. Two-layer structure: philosophy filter + algebraic-filter
 
 ```
-┌────────────────────────────────────────────┐
-│ philosophy filter (= 方針層、 2026-05-05)     │
-│   判断: 「機械検証可能 → AI実行 / 不可 → 却下」  │
-└────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ philosophy filter (policy layer, 2026-05-05) │
+│   judgment: "machine-verifiable → AI run /   │
+│              not verifiable → reject"        │
+└──────────────────────────────────────────────┘
                   ↓
-┌────────────────────────────────────────────┐
-│ algebraic-filter (= 物理層、 本リポジトリ)      │
-│   PostToolUse hook で                       │
-│   違反コードを exit 2 + feedback で block    │
-│   → Claude が自己修正サイクル を起動           │
-└────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ algebraic-filter (physical layer, this repo) │
+│   PostToolUse hook blocks violating code     │
+│   with exit 2 + feedback                     │
+│   → Claude triggers self-correction cycle    │
+└──────────────────────────────────────────────┘
 ```
 
-### 役割分担
+### Responsibility split
 
-| 層 | 責務 | 実装 |
+| Layer | Responsibility | Implementation |
 |---|---|---|
-| philosophy filter | task が機械検証可能か判断 (= 委任決定) | 方針層、 chai の運用原理 |
-| algebraic-filter | 機械検証可能 task の実行時に違反検出 + feedback | Phase 0-5、 本リポジトリ |
+| philosophy filter | Judges whether a task is machine-verifiable (delegation decision) | Policy layer, chai's operating principles |
+| algebraic-filter | At runtime, detects violations + injects feedback into machine-verifiable tasks | Phase 0-5, this repository |
 
-### 補完関係
+### Complementarity
 
-- philosophy filter が「AI 実行 OK」 と判断した task に対し、 AF が **書き込み時点で違反を block + 自己修正サイクル起動**
-- philosophy filter は 概念判断、 AF は 物理執行 = 二層で AI 委任の guardrail を完成
+- For tasks the philosophy filter deems "AI runnable", AF **blocks violating writes + triggers self-correction at write-time**
+- philosophy filter handles conceptual judgment; AF handles physical enforcement = together they complete the AI-delegation guardrail
 
 ---
 
-## 2. 3 層検証パイプライン
+## 2. 3-layer verification pipeline
 
 ```
-Claude Code が Write/Edit
+Claude Code writes / edits
         ↓
-PostToolUse hook 発火 (= hooks/posttool_af_check.py)
-        ↓
-┌─────────────────────────────────────┐
-│ Layer 1: 静的検証 (数十 ms)            │
-│   ruff PERF/SIM/FURB/ANN/F + AF AST   │
-│   - 純粋性 / 中間データ / 型注釈         │
-└─────────────────────────────────────┘
-        ↓ (違反あり)
-┌─────────────────────────────────────┐
-│ Layer 2: 代数法則 PBT (数秒)           │
-│   hypothesis (auto-generated)         │
-│   - Monoid / Functor / Monad 則       │
-│   - 結合律 / 単位律 / 冪等性 / 可換律    │
-└─────────────────────────────────────┘
+PostToolUse hook fires (hooks/posttool_af_check.py)
         ↓
 ┌─────────────────────────────────────┐
-│ Layer 3: 実測 (数十秒、 選択的)         │
-│   tracemalloc / memray (Linux/macOS)  │
-│   - メモリアクセス回数                  │
-│   - 中間オブジェクト生成数              │
+│ Layer 1: static (tens of ms)        │
+│   ruff PERF/SIM/FURB/ANN/F + AF AST │
+│   - purity / intermediate data /    │
+│     type annotations                │
+└─────────────────────────────────────┘
+        ↓ (on violation)
+┌─────────────────────────────────────┐
+│ Layer 2: algebraic-law PBT (s)      │
+│   hypothesis (auto-generated)       │
+│   - Monoid / Functor / Monad laws   │
+│   - associativity / identity /      │
+│     idempotence / commutativity     │
 └─────────────────────────────────────┘
         ↓
-Phase 4: LLM 最適化フィードバック整形
+┌─────────────────────────────────────┐
+│ Layer 3: runtime (tens of s)        │
+│   tracemalloc / memray (Linux/macOS)│
+│   - memory access counts            │
+│   - intermediate-object counts      │
+└─────────────────────────────────────┘
+        ↓
+Phase 4: LLM-optimized feedback formatter
   {layer, location, law, skeleton, fix_example}
         ↓
 exit code 2 + JSON additionalContext
         ↓
-Claude 自己修正サイクル
+Claude self-correction cycle
 ```
 
-### Layer 別の検出能力
+### Detection scope per layer
 
-| Layer | 検出対象 | 実装 | カバレッジ |
+| Layer | Detection target | Implementation | Coverage |
 |---|---|---|---|
-| 1 静的 (ruff) | PERF / SIM / FURB / ANN / F / B / UP / RUF / C | ruff CLI | ~966 rule (= Python lint 標準) |
-| 1 静的 (AF AST) | intermediate-list-chain / dict-keys-list / explicit-copy / string-concat-in-loop | `af_phase3/static_checker.py` | 4 rule (= AF 独自 contribution) |
-| 2 代数法則 PBT | Monoid (2) / Functor (2) / Monad (3) / Semigroup (1) / Foldable (1) / Eq (2) / Commutativity / Idempotence (2) | `af_phase2/law_templates.py` | 13 法則 |
-| 3 データ移動量 | allocation byte / 中間 list 数 / 閾値判定 | `af_phase3/runtime_checker.py` | tracemalloc (Windows + Unix) |
+| 1 Static (ruff) | PERF / SIM / FURB / ANN / F / B / UP / RUF / C | ruff CLI | ~966 rules (Python lint standard) |
+| 1 Static (AF AST) | intermediate-list-chain / dict-keys-list / explicit-copy / string-concat-in-loop | `af_phase3/static_checker.py` | 4 rules (AF original contribution) |
+| 2 Algebraic-law PBT | Monoid (2) / Functor (2) / Monad (3) / Semigroup (1) / Foldable (1) / Eq (2) / Commutativity / Idempotence (2) | `af_phase2/law_templates.py` | 13 laws |
+| 3 Data movement | allocation bytes / intermediate-list count / threshold check | `af_phase3/runtime_checker.py` | tracemalloc (Windows + Unix) |
 
-### エネルギー効率の articulate
+### Energy-efficiency rationale
 
-軽い層で弾けるものは軽い層で弾く設計:
-- Layer 1 (数十 ms): ruff + AST = 大半の違反を弾く
-- Layer 2 (数秒): hypothesis = 関数固有の代数法則違反
-- Layer 3 (数十秒): tracemalloc = データ移動量
+Cheap layers reject first:
+- Layer 1 (tens of ms): ruff + AST = filters most violations
+- Layer 2 (seconds): hypothesis = function-specific algebraic-law violations
+- Layer 3 (tens of seconds): tracemalloc = data-movement violations
 
-後段ほどコスト高 → 前段で弾けば後段の cost 節約。
+Later stages cost more → catching at earlier stages saves later compute.
 
 ---
 
-## 3. AET-OS Verified Orchestrator Pattern Layer 3 として
+## 3. As AET-OS Verified Orchestrator Pattern Layer 3
 
-[docs/AIエージェントアーキテクチャ調査報告.pdf](AIエージェントアーキテクチャ調査報告.pdf) §5.1 で articulate された 3 層構造に対する AF の位置:
+The three-layer structure articulated in [docs/AIエージェントアーキテクチャ調査報告.pdf](AIエージェントアーキテクチャ調査報告.pdf) §5.1, with AF's position:
 
-| AET-OS 層 | 役割 | AF 対応 |
+| AET-OS layer | Role | AF mapping |
 |---|---|---|
-| 1 戦略層 (Strategic) | Meta-Architect (= タスク分解 / リソース配分) | AF scope 外 (= Claude Code 本体 + chai の方針判断) |
-| 2 実行層 (Execution) | Worker / Specialist (= コード生成) | AF scope 外 (= Claude Code が担当) |
-| **3 検証層 (Verification)** | **Verifier / Auditor (= 形式仕様生成 + ソルバー + 安全性チェック)、 拒否権 (Veto Power) を持つ** | **AF が直接担当 = 検証層の Python skill+hook 実装** |
+| 1 Strategic | Meta-Architect (task decomposition / resource allocation) | Out of AF scope (Claude Code + chai's policy judgment) |
+| 2 Execution | Worker / Specialist (code generation) | Out of AF scope (Claude Code handles) |
+| **3 Verification** | **Verifier / Auditor (formal-spec generation + solver + safety check), holds Veto Power** | **AF directly implements = Python skill+hook layer for the verification layer** |
 
-### Veto Power の具体実装
+### Concrete implementation of veto power
 
-AF hook の `exit code 2` = AET-OS 検証層の **拒否権** の物理実装:
-- hook が違反検出時 → exit 2 + `decision: "block"` + structured feedback
-- Claude (= 実行層) は block を受けて修正サイクルに入る (= 検証層が実行層に対し独立 + 強い権限)
+AF hook's `exit code 2` = the physical implementation of AET-OS verification layer's **veto power**:
+- On detection, hook returns exit 2 + `decision: "block"` + structured feedback
+- Claude (execution layer) accepts the block and enters a correction cycle (verification layer is independent of + holds strong authority over execution layer)
 
-### SETS 独立検証器思想との整合
+### Alignment with SETS independent-verifier philosophy
 
 AET-OS PDF §3.2 verbatim:
-> 検証フェーズには、 生成とは異なる視点 (例えば、 異なるプロンプト戦略、 あるいは後述する形式手法のような外部ツール) を持つ独立したプロセスを割り当てる設計パターンが有効である。
+> The verification phase should be assigned an independent process with a different perspective from generation (e.g. a different prompt strategy, or an external tool like the formal methods described below). This design pattern is effective.
 
-AF の対応:
-- hook は subprocess で起動 (= Claude session とは独立プロセス)
-- 検証 tool は ruff / hypothesis / tracemalloc (= LLM 非依存の決定論ツール)
-- structured feedback で Claude に拒否権行使 (= 独立視点からの修正要求)
+AF's correspondence:
+- Hook runs as a subprocess (process independent of Claude session)
+- Verification tools are ruff / hypothesis / tracemalloc (LLM-independent deterministic tools)
+- Structured feedback exercises veto power over Claude (independent-perspective fix demand)
 
-### CrossHair / QWED との関係
+### Relationship with CrossHair / QWED
 
-AET-OS PDF §4.2 で推奨される CrossHair + QWED は Python 形式検証の standard。 AF は:
-- CrossHair = `af_phase3/scalpel_bridge.py` で Docker container 経由統合 (Phase 3 拡張)
-- QWED 「LLM は信頼できない翻訳者」 哲学 = AF 全体の設計思想 (= LLM 生成を決定論ツールで検証)
+CrossHair + QWED, recommended in AET-OS PDF §4.2, are the Python formal-verification standard. AF integrates them as:
+- CrossHair = `af_phase3/scalpel_bridge.py` (Phase 3 extension via Docker container)
+- QWED "LLM is an untrusted translator" philosophy = AF's overall design (verify LLM generation with deterministic tools)
 
 ---
 
-## 4. Phase 0 〜 Phase 5 の構成 mapping
+## 4. Phase 0 – Phase 5 composition mapping
 
-| Phase | 役割 | 主要 file | 状態 |
+| Phase | Role | Key files | Status |
 |---|---|---|---|
-| 0 Pre-reg | 仮説 H1-H4 + 撤退基準 + baseline 計測 | [docs/algebraic_filter_phase0_pre_reg.md](algebraic_filter_phase0_pre_reg.md) | ✓ closing (2026-05-19) |
-| 1 PostToolUse hook | hook script + 違反 sample 46 件 + manifest 駆動 TDD | [hooks/posttool_af_check.py](../hooks/posttool_af_check.py) + [samples/violations/](../samples/violations/) | ✓ end-to-end 動作確認 |
-| 2 代数法則 PBT 自動生成 | inferrer + law_templates + generator | [af_phase2/](../af_phase2/) | ✓ 13 法則 + 100% subset coverage |
-| 3 データ移動量 | static_checker + runtime_checker + Scalpel Docker | [af_phase3/](../af_phase3/) + [af_phase3_scalpel/](../af_phase3_scalpel/) | ✓ 拡張完成 |
-| 4 LLM 最適化フィードバック | feedback_formatter + anti_pattern_tracker | [af_phase4/](../af_phase4/) | ✓ minimal prototype |
-| 5 OSS 公開 | README + LICENSE + pyproject + GitHub push | この repository | ✓ initial push |
+| 0 Pre-reg | Hypotheses H1-H4 + withdrawal criteria + baseline | [docs/algebraic_filter_phase0_pre_reg.md](algebraic_filter_phase0_pre_reg.md) | ✓ closed (2026-05-19) |
+| 1 PostToolUse hook | Hook script + 46 violation samples + manifest-driven TDD | [hooks/posttool_af_check.py](../hooks/posttool_af_check.py) + [samples/violations/](../samples/violations/) | ✓ end-to-end verified |
+| 2 Algebraic-law PBT auto-gen | inferrer + law_templates + generator | [af_phase2/](../af_phase2/) | ✓ 13 laws + 100% subset coverage |
+| 3 Data movement | static_checker + runtime_checker + Scalpel Docker | [af_phase3/](../af_phase3/) + [af_phase3_scalpel/](../af_phase3_scalpel/) | ✓ extended |
+| 4 LLM-optimized feedback | feedback_formatter + anti_pattern_tracker | [af_phase4/](../af_phase4/) | ✓ minimal prototype |
+| 5 OSS release | README + LICENSE + pyproject + GitHub push | This repository | ✓ initial push |
 
-### Phase 0 binding 契約 達成
+### Phase 0 binding contract achievement
 
-- H1 既存ツールカバレッジ ≥70% → mini-prototype で 78.6% PASS
-- H2 差別化軸の独立性 → VeCoGen は C 対象、 AF は Python skill 層独立 niche PASS
-- H3 baseline 計測 ≥10 件 → LayerForge で 59 件 PASS (sense gap 注記)
-- H4 AET-OS 整合 → Verified Orchestrator Pattern Layer 3 mapping landed (full PASS 昇格)
-- S0-1〜S0-5 全達成 → Phase 1 着手承認
+- H1 existing-tool coverage ≥70% → mini-prototype 78.6% PASS
+- H2 differentiation-axis independence → VeCoGen is C-targeted; AF in independent Python skill-layer niche → PASS
+- H3 baseline measurement ≥10 violations → 59 in LayerForge → PASS (sense gap noted)
+- H4 AET-OS alignment → Verified Orchestrator Pattern Layer 3 mapping landed (full PASS promotion)
+- S0-1〜S0-5 all met → Phase 1 launch authorized
 
-### Phase 1 撤退判定 ポイント 1 クリア
+### Phase 1 withdrawal criterion 1 cleared
 
-A/B 計測 evidence (= [docs/evidence_summary.md](evidence_summary.md)):
-- 5 task 版 (raw コード niche): pass@1 +80%
-- 12 sample wide 版 (整理済 niche): pass@1 +8.3%
-- 両 niche で 撤退判定基準 (+5%) クリア = AF 有効性立証
+A/B measurement evidence (see [docs/evidence_summary.md](evidence_summary.md)):
+- 5-task version (raw-code niche): pass@1 +80%
+- 12-sample wide version (curated niche): pass@1 +8.3%
+- Both niches clear withdrawal criterion (+5%) = AF effectiveness substantiated
 
 ---
 
-## 関連参照
+## See also
 
-- [docs/algebraic_filter_project_plan.md](algebraic_filter_project_plan.md) — Phase roadmap 詳細
-- [docs/algebraic_filter_related_work.md](algebraic_filter_related_work.md) — 先行研究比較
-- [docs/_index/aet_os_reference.md](_index/aet_os_reference.md) — AET-OS PDF 索引 + mapping
-- [docs/tool_landscape.md](tool_landscape.md) — ツール選定の根拠
+- [docs/algebraic_filter_project_plan.md](algebraic_filter_project_plan.md) — Phase roadmap details (Japanese)
+- [docs/algebraic_filter_related_work.md](algebraic_filter_related_work.md) — Related-work comparison (Japanese)
+- [docs/_index/aet_os_reference.md](_index/aet_os_reference.md) — AET-OS PDF index + mapping (Japanese)
+- [docs/tool_landscape.md](tool_landscape.md) — Tool-selection rationale (Japanese)
