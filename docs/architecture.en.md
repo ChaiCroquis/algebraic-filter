@@ -39,6 +39,7 @@ AF design articulated across four axes:
 
 - For tasks the philosophy filter deems "AI runnable", AF **blocks violating writes + triggers self-correction at write-time**
 - philosophy filter handles conceptual judgment; AF handles physical enforcement = together they complete the AI-delegation guardrail
+- Two-layer integration design + 4 individual-integration paths: [docs/philosophy_filter_integration.en.md](philosophy_filter_integration.en.md)
 
 ---
 

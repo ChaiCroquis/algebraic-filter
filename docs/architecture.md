@@ -36,6 +36,7 @@ AF の設計を 4 軸で articulate:
 
 - philosophy filter が「AI 実行 OK」 と判断した task に対し、 AF が **書き込み時点で違反を block + 自己修正サイクル起動**
 - philosophy filter は 概念判断、 AF は 物理執行 = 二層で AI 委任の guardrail を完成
+- 二層パッケージ導線設計 + 個人運用への組み込み 4 path の詳細: [docs/philosophy_filter_integration.md](philosophy_filter_integration.md)
 
 ---
 

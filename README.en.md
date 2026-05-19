@@ -15,7 +15,7 @@ AI-generated code contains a large amount of algebraic structural defects (purit
 ### Design philosophy
 
 - **Hook over constrained decoding**: CRANE (2025) showed that strong decoding constraints degrade LLM reasoning. AF uses post-hoc verification to preserve LLM autonomy while keeping verification deterministic (zero hallucination).
-- **Two-layer structure**: philosophy filter (policy layer: "machine-verifiable → AI executes / not verifiable → reject") + algebraic-filter (physical layer: hook blocks violating code + emits feedback). Complementary design.
+- **Two-layer structure**: philosophy filter (policy layer) + algebraic-filter (physical layer, this OSS), complementary design. The policy layer uses a 4-step decision tree: (1) machine-verifiable → AI runs / (2) 100% reproducible → AI runs / (3) business domain → user-only / (4) reduces cognitive load → AI default-runs, else drop the task. "I want it easy" = cognitive-load reduction is the top principle that articulates the AI delegation boundary. Details: [docs/philosophy_filter_integration.en.md](docs/philosophy_filter_integration.en.md) (includes individual-integration paths).
 - **Concrete implementation of AET-OS Verified Orchestrator Pattern Layer 3** as a Python skill+hook layer (verification layer independent of execution layer + holds veto power).
 
 ### 3-layer verification pipeline
@@ -175,6 +175,7 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 | [docs/architecture.en.md](docs/architecture.en.md) | Detailed architecture (two-layer / 3-layer pipeline / AET-OS Layer 3 mapping / Phase 0-5 composition) |
 | [docs/evidence_summary.en.md](docs/evidence_summary.en.md) | Evidence summary (A/B +80%/+8.3% / Phase 0 H1-H4 / Phase 2 100% subset / Phase 3 100% subset / end-to-end Claude self-correction) |
 | [docs/troubleshooting.en.md](docs/troubleshooting.en.md) | Known issues + countermeasures (Windows path mangling / Scalpel typed-ast / memray Windows / session reload / auto-mode classifier) |
+| [docs/philosophy_filter_integration.en.md](docs/philosophy_filter_integration.en.md) | Two-layer integration design with the philosophy filter (policy layer) — 4-step decision tree + AF as physical-layer implementation + 4 paths for individual integration |
 
 Japanese versions: [README.md](README.md), [USAGE.md](USAGE.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [docs/*.md](docs/) (non-`.en` suffix files).
 
