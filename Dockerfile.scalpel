@@ -1,0 +1,30 @@
+# AF Phase 3 拡張: Scalpel 専用 isolated env (Python 3.10、 typed-ast build 互換)
+#
+# 用途:
+#   - Scalpel (python-scalpel) は typed-ast に依存、 Python 3.13 では build 失敗
+#   - Python 3.10 環境を Docker で分離して、 関数間 data flow / alias analysis を articulate
+#   - AF main env (Windows native, Python 3.13) からは subprocess + docker exec で bridge する
+#
+# Build:
+#   docker build -t af-scalpel -f Dockerfile.scalpel .
+# Run (interactive verify):
+#   docker run --rm af-scalpel
+# Bridge usage (Python script analysis):
+#   docker run --rm -v "$(pwd)/samples:/workspace/samples" af-scalpel \
+#       python -m af_scalpel_bridge /workspace/samples/violations/intermediate_list_chain.py
+
+FROM python:3.10-slim
+
+WORKDIR /workspace
+
+# AF Phase 3 Scalpel 統合用最小 dependency
+# pip 経由で python-scalpel + 関連 (typed-ast は Python 3.10 で build 可能)
+RUN pip install --no-cache-dir \
+    python-scalpel \
+    && python -c "from scalpel.cfg import CFGBuilder; print('Scalpel CFGBuilder import OK')"
+
+# bridge script を container 内に配置 (runtime mount でなく build 時 COPY、 簡易化)
+COPY af_phase3_scalpel /workspace/af_phase3_scalpel
+
+# default: Scalpel 動作確認
+CMD ["python", "-c", "from scalpel.cfg import CFGBuilder; from scalpel.ssa import SSA; print('Scalpel imports OK: CFGBuilder, SSA')"]

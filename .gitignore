@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# AF プロジェクト固有
+# A/B 計測 throwaway file (= scratch/ は試験 fixture、 永続化対象外)
+scratch/
+
+# A/B log file (= run-specific、 公開 repo に含めない選択)
+docs/_ab_measurement/log_auto_*.json
+
+# AF hook violation history (= session-specific persistence)
+hooks/af_violation_history.json
+
+# Claude Code project settings (= 各 user の local 設定、 公開しない)
+.claude/settings.local.json
+.claude/settings.local.json.disabled
+
+# Docker build artifacts
+.dockerignore
+
+# Optional: Phase 1+ samples (= 公開対象、 ただし fixed/ 配下の auto-generated は再生成可)
+# (samples/ 自体は公開、 fixed/ も公開、 ただし scratch/ のみ除外)

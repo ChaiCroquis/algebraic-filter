@@ -1,0 +1,1475 @@
+{
+  "schema_version": "1.0",
+  "purpose": "AF が covered space としたい違反サンプルのメタデータ管理 — 各サンプルが (a) 何で (= どのツールで)、 (b) 何を確認するのか、 (c) 何が問題なのか、 (d) 期待修正後コード、 (e) Phase 0 実測結果 を articulate",
+  "last_updated": "2026-05-19",
+  "phase": "Phase 1 variation 拡充 #5 (46 件、 30-50 目標範囲、 chai 残課題対応 2026-05-19)",
+  "total_samples": 46,
+  "samples": [
+    {
+      "id": "perf401_manual_list_comp",
+      "file": "perf401_manual_list_comp.py",
+      "category": "Layer 1 静的 (ruff)",
+      "violation": {
+        "type": "PERF401",
+        "name": "manual-list-comprehension",
+        "rule_source": "ruff PERF"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "PERF401",
+        "command": "python -m ruff check --select=PERF samples/violations/perf401_manual_list_comp.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "PERF401"
+      },
+      "what_to_verify": "AF hook が AI生成コードでこの違反を検出し、 exit code 2 で Claude にフィードバックして自己修正を起動できること",
+      "what_is_the_problem": "append loop で list を構築している。 (1) 中間ステップ multiple、 (2) for+if+append の overhead 重複、 (3) 可読性が list comprehension に劣る、 (4) 一部 implementation で性能差あり",
+      "expected_fix": {
+        "skeleton": "list comprehension",
+        "code_example": "[x * 2 for x in data if x > 0]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "PERF401 manual-list-comprehension",
+          "alternative_skeleton": "list comprehension",
+          "fix_example": "[x * 2 for x in data if x > 0]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff PERF401 detected at line 15 (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "sim103_needless_bool",
+      "file": "sim103_needless_bool.py",
+      "category": "Layer 1 静的 (ruff)",
+      "violation": {
+        "type": "SIM103",
+        "name": "needless-bool",
+        "rule_source": "ruff SIM"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "SIM103",
+        "command": "python -m ruff check --select=SIM samples/violations/sim103_needless_bool.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "SIM103"
+      },
+      "what_to_verify": "AF hook が bool 式の冗長 if/else ラップを検出して直接 return 形を推奨できること",
+      "what_is_the_problem": "bool 式の return を if/else でラップしている。 (1) 冗長コード、 (2) 直接 return 形より読みづらい、 (3) cyclomatic complexity を無駄に上げる",
+      "expected_fix": {
+        "skeleton": "direct boolean return",
+        "code_example": "return x > 0",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "SIM103 needless-bool",
+          "alternative_skeleton": "direct boolean return",
+          "fix_example": "return x > 0"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff SIM103 detected at line 12 (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "sim300_yoda_conditions",
+      "file": "sim300_yoda_conditions.py",
+      "category": "Layer 1 静的 (ruff)",
+      "violation": {
+        "type": "SIM300",
+        "name": "yoda-conditions",
+        "rule_source": "ruff SIM"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "SIM300",
+        "command": "python -m ruff check --select=SIM samples/violations/sim300_yoda_conditions.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "SIM300"
+      },
+      "what_to_verify": "AF hook が yoda condition (literal left of comparison) を検出して通常順序 (variable left) に修正できること",
+      "what_is_the_problem": "`0 == status` 形は左辺 literal で読みづらい。 (1) C 言語の typo 防御 idiom だが Python では non-idiomatic、 (2) IDE refactoring と摩擦、 (3) コードレビュー時に脳内で読み替えるオーバーヘッド",
+      "expected_fix": {
+        "skeleton": "variable on left of comparison",
+        "code_example": "if status == 0:",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "SIM300 yoda-conditions",
+          "alternative_skeleton": "variable on left of comparison",
+          "fix_example": "if status == 0:"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff SIM300 detected at line 14 (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "ann001_missing_type",
+      "file": "ann001_missing_type.py",
+      "category": "Layer 1 静的 (ruff、 mypy substitute)",
+      "violation": {
+        "type": "ANN001",
+        "name": "missing-type-function-argument",
+        "rule_source": "ruff ANN"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "ANN001",
+        "command": "python -m ruff check --select=ANN samples/violations/ann001_missing_type.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "ANN001"
+      },
+      "what_to_verify": "AF hook が型注釈欠落を検出し、 Phase 2 PBT 自動生成の前提条件 (= 型ヒント完備) を満たすよう修正を促せること",
+      "what_is_the_problem": "引数 / 戻り値の型注釈が欠落。 (1) 静的解析の手がかり喪失、 (2) IDE 補完 / refactoring の root cause、 (3) **Phase 2 PBT 自動生成は型シグネチャ駆動なので前提が崩れる** = AF 自体の機能を阻害する depth-zero 違反",
+      "expected_fix": {
+        "skeleton": "typed function signature",
+        "code_example": "def add(x: int, y: int) -> int:",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "ANN001 missing-type-function-argument",
+          "alternative_skeleton": "typed function signature",
+          "fix_example": "def add(x: int, y: int) -> int: ..."
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff ANN001 detected (x, y both) + ANN201 over-detect (return type) at line 11 (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "monoid_associativity_violation",
+      "file": "monoid_associativity_violation.py",
+      "category": "Layer 2 代数法則 (hypothesis / CrossHair)",
+      "violation": {
+        "type": "monoid-associativity-and-identity",
+        "name": "subtraction-reduce-named-sum",
+        "rule_source": "AF 独自 (Layer 2 PBT 自動生成 + contract 検証)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given property test (Monoid 則: standard sum との等価性)",
+        "command": "python -m pytest samples/violations/tests/test_monoid_associativity.py -v",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "AF Layer 2 PBT 自動生成器が、 関数名 'sum' から Monoid 則 (associative + identity) を推論して @given test を生成 → counter-example で違反を articulate できること",
+      "what_is_the_problem": "関数名 'sum' は Monoid 構造 (associative + identity = 0) を示唆するが、 実装は subtraction reduce で (1) **結合律違反** (a-b-c != a-(b-c))、 (2) **単位律違反** (0 - x = -x ≠ x)、 (3) `xs=[1]` の minimal case で `my_sum=-1 vs sum=1` divergence、 (4) 表層テストで通過してしまう可能性が高い構造的欠陥",
+      "expected_fix": {
+        "skeleton": "addition-based reduce (Monoid: int+0)",
+        "code_example": "import functools, operator\ndef my_sum(xs: list[int]) -> int:\n    return functools.reduce(operator.add, xs, 0)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Monoid associativity + identity (subtraction is non-associative, 0-x != x)",
+          "alternative_skeleton": "addition-based reduce or sum() builtin",
+          "fix_example": "return functools.reduce(operator.add, xs, 0)",
+          "counter_example": "xs=[1]: my_sum=-1 but sum=1"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis Falsifying example xs=[1] in 0.35s (EXECUTED 2026-05-19 via tests/test_monoid_associativity.py)",
+        "phase_1_crosshair_evidence": "CrossHair icontract demonstration: monoid_associativity_with_icontract.py (#22 variant) で `error: false when calling my_sum([2]) (which returns -2)` verbatim — post-condition `result == sum(xs)` 違反を symbolic 探索で articulate (EXECUTED 2026-05-19、 task #13 close 根拠)"
+      }
+    },
+    {
+      "id": "intermediate_list_chain",
+      "file": "intermediate_list_chain.py",
+      "category": "Layer 3 データ移動量 (tracemalloc / memray Linux)",
+      "violation": {
+        "type": "intermediate-list-materialization",
+        "name": "list-of-filter-of-list-of-map",
+        "rule_source": "AF 独自 (Layer 3 + 将来 ruff custom rule)"
+      },
+      "expected_detection": {
+        "tool": "tracemalloc (Windows fallback) / memray (Linux/macOS) / ruff custom rule (Phase 1+)",
+        "rule_id": "intermediate-list-chain",
+        "command": "python samples/violations/tests/measure_intermediate.py",
+        "expected_exit_code": 0,
+        "expected_output_marker": "intermediate_list_chain.py:13 で大きな allocation"
+      },
+      "what_to_verify": "AF Layer 3 が `list(filter(..., list(map(...))))` パターンで中間 list の materialization を line-level で観測 → 閾値判定で違反 articulate できること",
+      "what_is_the_problem": "`list(filter(..., list(map(..., data))))` は 2 つの中間 list を materialization。 (1) memory 消費 ~2x、 (2) cache pollution、 (3) GC 圧力増加、 (4) iterator chain or single comprehension で等価 + 効率的、 (5) **ruff 標準ルールでは検出されない = AF 独自 contribution の適用 niche**",
+      "expected_fix": {
+        "skeleton": "single list comprehension or generator chain",
+        "code_example": "[x * 2 for x in data if x > 0]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "data movement (intermediate list materialization)",
+          "alternative_skeleton": "single comprehension",
+          "fix_example": "[x * 2 for x in data if x > 0]",
+          "measured_overhead": "392 KiB / 9873 allocations for 10000-element input"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PARTIAL",
+        "phase_0_evidence": "ruff PERF FAIL (標準では検出されず)、 tracemalloc PASS (line 13 で 392 KiB / 9873 allocation を articulate、 EXECUTED 2026-05-19)、 Phase 1 で ruff custom rule + 閾値判定を補完予定"
+      }
+    },
+    {
+      "id": "purity_print_side_effect",
+      "file": "purity_print_side_effect.py",
+      "category": "Layer 1 custom + Layer 2 contract (CrossHair @pure)",
+      "violation": {
+        "type": "purity-violation",
+        "name": "io-side-effect-in-pure-named-function",
+        "rule_source": "AF 独自 (custom ruff rule or CrossHair @pure contract)"
+      },
+      "expected_detection": {
+        "tool": "Phase 1 custom rule / CrossHair @pure contract",
+        "rule_id": "purity-violation",
+        "command": "(Phase 1 着手後に実装)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "print() side effect detected"
+      },
+      "what_to_verify": "AF が 'calc' のような pure-suggesting 命名関数に print/global mutation/file I/O 等の side effect が混入している場合に検出できること",
+      "what_is_the_problem": "関数名 'calc' は pure computation を示唆するが print I/O side effect を含む。 (1) **testability 低下** (output capture が必要)、 (2) **referential transparency 違反** (同入力で副作用が累積)、 (3) **cache-friendly でなくなる** (memoization 効果が表に出ない)、 (4) Phase 2 PBT 自動生成が pure 前提で動作するため `@pure` contract 破綻 = AF 自体の前提を崩す depth-zero 違反",
+      "expected_fix": {
+        "skeleton": "pure function (no I/O, no global mutation)",
+        "code_example": "def calc(x: int) -> int:\n    return x * 2",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "purity (no side effects in pure-named function)",
+          "alternative_skeleton": "pure function",
+          "fix_example": "def calc(x: int) -> int: return x * 2",
+          "side_effects_detected": ["print"]
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 0 では custom rule / @pure contract が未実装のため検出能力評価は Phase 1 持ち越し (manifest articulate のみ)"
+      }
+    },
+    {
+      "id": "functor_id_violation",
+      "file": "functor_id_violation.py",
+      "category": "Layer 2 代数法則 (Functor 則)",
+      "violation": {
+        "type": "functor-identity-law-violation",
+        "name": "fmap-not-preserving-identity",
+        "rule_source": "AF 独自 (Layer 2 PBT: Functor identity law)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given Functor identity (my_map(id, xs) == xs)",
+        "command": "python -m pytest samples/violations/tests/test_functor_id_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT 自動生成器が my_map 関数名 + 型シグネチャから Functor 恒等則 を推論 → @given test を生成 → counter-example で違反を articulate",
+      "what_is_the_problem": "命名 'my_map' は Functor 構造を示唆するが、 f を適用後 0.0001 加算 → fmap(id, xs) != xs。 (1) Functor identity law 違反、 (2) compositionality 崩壊、 (3) Phase 2 自動生成 PBT の検証 anchor が破綻 = AF 自身の前提を崩す",
+      "expected_fix": {
+        "skeleton": "standard map (no extra transform)",
+        "code_example": "return [f(x) for x in xs]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Functor identity (fmap id == id)",
+          "alternative_skeleton": "standard map",
+          "fix_example": "[f(x) for x in xs]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 実装と並行で確認予定 (Phase 1 着手 2026-05-19 で landed)"
+      }
+    },
+    {
+      "id": "foldable_foldr_foldl_divergence",
+      "file": "foldable_foldr_foldl_divergence.py",
+      "category": "Layer 2 代数法則 (Foldable / Monoid 則)",
+      "violation": {
+        "type": "foldable-foldr-foldl-divergence",
+        "name": "non-associative-op-causes-fold-direction-divergence",
+        "rule_source": "AF 独自 (Layer 2 PBT: foldl/foldr 等価性 for associative op)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (reduce_left_subtract(xs) == reduce_right_subtract(xs))",
+        "command": "python -m pytest samples/violations/tests/test_foldable_foldr_foldl_divergence.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が同一 op を foldl / foldr で適用した時の等価性を property test → 非結合 op (subtraction) を含む実装で violation を articulate",
+      "what_is_the_problem": "subtraction は非結合 (a-b-c != a-(b-c)) のため foldl と foldr が divergence。 (1) Foldable 構造の前提 (associative op only) を破る、 (2) 並列化不能 (foldl は逐次、 foldr は逆) = 性能 implication、 (3) operator.add に置換すれば標準 sum と整合",
+      "expected_fix": {
+        "skeleton": "associative op (operator.add)",
+        "code_example": "functools.reduce(operator.add, xs, 0)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Foldable foldl/foldr equivalence (requires associative op)",
+          "alternative_skeleton": "associative op or use sum()",
+          "fix_example": "functools.reduce(operator.add, xs, 0)"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "monad_left_identity_violation",
+      "file": "monad_left_identity_violation.py",
+      "category": "Layer 2 代数法則 (Monad 則)",
+      "violation": {
+        "type": "monad-left-identity-law-violation",
+        "name": "bind-ignores-pure-constructor",
+        "rule_source": "AF 独自 (Layer 2 PBT: Monad left identity)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (bind(pure(a), f) == f(a))",
+        "command": "python -m pytest samples/violations/tests/test_monad_left_identity_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が Maybe-like Monad の left identity 則を property test → bind が pure constructor を ignore する違反を articulate",
+      "what_is_the_problem": "bind が Just を Nothing に変換 → f が呼ばれない = left identity 違反。 (1) Monad の最も基本的な性質崩壊、 (2) do-notation 等の syntactic sugar が機能不全、 (3) Phase 2 PBT 自動生成の Monad テンプレが検証 anchor として機能しない",
+      "expected_fix": {
+        "skeleton": "bind unwraps Just and applies f",
+        "code_example": "if m[0] == 'Just': return f(m[1])\\nreturn m",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Monad left identity (bind(pure(a), f) == f(a))",
+          "alternative_skeleton": "bind that unwraps and applies",
+          "fix_example": "if m[0] == 'Just': return f(m[1])"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "commutativity_violation_in_named_commutative",
+      "file": "commutativity_violation_in_named_commutative.py",
+      "category": "Layer 2 代数法則 (可換律)",
+      "violation": {
+        "type": "commutativity-violation",
+        "name": "merge-named-but-non-commutative",
+        "rule_source": "AF 独自 (Layer 2 PBT: commutativity)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (merge(a, b) == merge(b, a))",
+        "command": "python -m pytest samples/violations/tests/test_commutativity_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が 'merge' 命名から可換律を推論 → property test で a, b の順序不変性を assert → 単純 concat が違反を起こすことを articulate",
+      "what_is_the_problem": "命名 'merge' は set merge 等の可換 op を示唆するが、 単純 concat は非可換 ('x_y' != 'y_x')。 (1) caller の mental model 崩壊、 (2) 並列分散処理 (例: mapreduce) で結果非決定的化、 (3) sorted concat / set union 等で対応可能",
+      "expected_fix": {
+        "skeleton": "order-independent (sorted concat / set union)",
+        "code_example": "'_'.join(sorted([a, b]))",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Commutativity (merge implies a+b == b+a)",
+          "alternative_skeleton": "order-independent operation",
+          "fix_example": "'_'.join(sorted([a, b]))"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "idempotence_violation_in_named_set_add",
+      "file": "idempotence_violation_in_named_set_add.py",
+      "category": "Layer 2 代数法則 (冪等性)",
+      "violation": {
+        "type": "idempotence-violation",
+        "name": "set-add-without-dedup",
+        "rule_source": "AF 独自 (Layer 2 PBT: idempotence of add)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (len(s) after add(x) twice == len(s) after add(x) once)",
+        "command": "python -m pytest samples/violations/tests/test_idempotence_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が 'Set' 命名から冪等性 (add(x); add(x) == add(x)) を推論 → property test で 2 回 add 後の cardinality 不変性を assert",
+      "what_is_the_problem": "命名 'FakeSet.add' は set 構造 (= 重複なし) を示唆するが、 list append で実装 → 重複許容。 (1) cardinality 仕様破綻、 (2) hash table / B-tree 等の dedupe 構造への置き換え必要、 (3) downstream で in 句が予想外の動作になる",
+      "expected_fix": {
+        "skeleton": "dedup check or standard set",
+        "code_example": "if x not in self._data: self._data.append(x)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Idempotence (add x then add x == add x)",
+          "alternative_skeleton": "dedup check or set()",
+          "fix_example": "if x not in self._data: self._data.append(x)"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "multi_step_intermediate_chain",
+      "file": "multi_step_intermediate_chain.py",
+      "category": "Layer 3 データ移動量 (Stream Fusion 系)",
+      "violation": {
+        "type": "multi-step-intermediate-list-materialization",
+        "name": "3-step-list-of-map-filter-map",
+        "rule_source": "AF 独自 (Layer 3 + 将来 ruff custom rule)"
+      },
+      "expected_detection": {
+        "tool": "tracemalloc",
+        "rule_id": "intermediate-list-chain-3-step",
+        "command": "python -X utf8 samples/violations/tests/measure_intermediate_3step.py",
+        "expected_exit_code": 0,
+        "expected_output_marker": "multi_step_intermediate_chain.py で大きな allocation"
+      },
+      "what_to_verify": "Layer 3 が 3 段以上の list materialization (= 3 つの中間 list が allocation tracker に同時計上される) を観測 → 閾値判定で違反 articulate",
+      "what_is_the_problem": "list(map(...,list(filter(...,list(map(...,data)))))) は 3 つの中間 list を materialization。 (1) memory 消費 ~3x、 (2) cache pollution、 (3) GC 圧力、 (4) single comprehension または generator chain で等価かつ効率的、 (5) **Stream Fusion パターンが効く適用 niche**",
+      "expected_fix": {
+        "skeleton": "single list comprehension with fused operations",
+        "code_example": "[(x * 2) + 1 for x in data if (x * 2) > 0]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "data movement (multi-step intermediate list materialization)",
+          "alternative_skeleton": "single comprehension or generator chain",
+          "fix_example": "[(x * 2) + 1 for x in data if (x * 2) > 0]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 tracemalloc driver + 閾値判定 logic 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "missing_optional_handling",
+      "file": "missing_optional_handling.py",
+      "category": "Layer 1 型注釈 variants",
+      "violation": {
+        "type": "optional-return-type-omission",
+        "name": "function-returns-none-but-signature-claims-int",
+        "rule_source": "ruff RUF or mypy --strict (Phase 1 で導入)"
+      },
+      "expected_detection": {
+        "tool": "mypy",
+        "rule_id": "incompatible return value type (got None, expected int)",
+        "command": "python -m mypy --strict samples/violations/missing_optional_handling.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "incompatible"
+      },
+      "what_to_verify": "mypy --strict が None return + `-> int` signature の不整合を articulate → AF hook が Optional 型に修正を促す",
+      "what_is_the_problem": "signature `-> int` だが None を return → caller が None 不可前提でコードを書くと AttributeError 等のランタイム失敗。 (1) 型と実装の乖離、 (2) IDE 補完が誤誘導、 (3) 戻り値型を `int | None` にすれば caller に明示的 None handling を要求できる",
+      "expected_fix": {
+        "skeleton": "Optional return type",
+        "code_example": "def find_first_positive(xs: list[int]) -> int | None:",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Type signature integrity (return type must include None if None can be returned)",
+          "alternative_skeleton": "Optional return type",
+          "fix_example": "-> int | None"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "mypy --strict 実走: unfixed exit 1 + 'error: Incompatible return value type (got None, expected int) [return-value]' verbatim、 fixed exit 0 'Success: no issues found' verbatim (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "fmap_compose_violation",
+      "file": "fmap_compose_violation.py",
+      "category": "Layer 2 代数法則 (Functor 則)",
+      "violation": {
+        "type": "functor-compose-law-violation",
+        "name": "fmap-applies-f-twice",
+        "rule_source": "AF 独自 (Layer 2 PBT: Functor compose law)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given Functor compose (my_map(f, my_map(g, xs)) == my_map(f.g, xs))",
+        "command": "python -m pytest samples/violations/tests/test_fmap_compose_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が my_map に対し Functor compose law (fmap(f.g, xs) == fmap(f, fmap(g, xs))) を property test → f を 2 回適用する violation を articulate",
+      "what_is_the_problem": "命名 my_map は Functor として compose 性を持つはずだが、 f を 2 回適用してしまう。 (1) compose law 違反、 (2) caller の合成可能性前提が崩れる、 (3) Phase 2 自動生成 PBT の Functor テンプレが detect する",
+      "expected_fix": {
+        "skeleton": "single application of f",
+        "code_example": "[f(x) for x in xs]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Functor compose (fmap(f.g, xs) == fmap(f, fmap(g, xs)))",
+          "alternative_skeleton": "single f application",
+          "fix_example": "[f(x) for x in xs]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 統合と並行で確認予定"
+      }
+    },
+    {
+      "id": "monoid_identity_violation",
+      "file": "monoid_identity_violation.py",
+      "category": "Layer 2 代数法則 (Monoid 則 — identity)",
+      "violation": {
+        "type": "monoid-identity-violation",
+        "name": "reduce-initial-not-true-identity",
+        "rule_source": "AF 独自 (Layer 2 PBT: Monoid identity)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (my_sum(xs) == sum(xs))",
+        "command": "python -m pytest samples/violations/tests/test_monoid_identity_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が functools.reduce の initial 値が true identity (= addition なら 0) と一致するか property test → initial 5 で偏り検出",
+      "what_is_the_problem": "addition の identity は 0 だが initial に 5 を指定 → 全結果に +5 のバイアス。 (1) Monoid 構造の identity 法則破綻、 (2) empty list でも 5 を返す = caller 期待裏切る、 (3) initial=0 が正しい",
+      "expected_fix": {
+        "skeleton": "use true Monoid identity (0 for addition)",
+        "code_example": "functools.reduce(operator.add, xs, 0)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Monoid identity (initial == true identity of op)",
+          "alternative_skeleton": "true identity",
+          "fix_example": "reduce(add, xs, 0)"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 統合と並行で確認予定"
+      }
+    },
+    {
+      "id": "monad_right_identity_violation",
+      "file": "monad_right_identity_violation.py",
+      "category": "Layer 2 代数法則 (Monad 則 — right identity)",
+      "violation": {
+        "type": "monad-right-identity-violation",
+        "name": "bind-of-pure-changes-structure",
+        "rule_source": "AF 独自 (Layer 2 PBT: Monad right identity)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (bind(m, pure) == m)",
+        "command": "python -m pytest samples/violations/tests/test_monad_right_identity_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が bind(m, pure) == m を property test → Just を Different に変換する violation を articulate",
+      "what_is_the_problem": "Monad right identity = bind の結果を再 pure 適用しても元 m と等価でなければならない。 実装は Just を Different に変換してしまう。 (1) right identity 破綻、 (2) do-notation 等の equivalent transformation が機能不全、 (3) Phase 2 PBT 自動生成の Monad テンプレ詳細 detect",
+      "expected_fix": {
+        "skeleton": "bind unwraps and applies, no structural alteration",
+        "code_example": "if m[0] == 'Just': return f(m[1])",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Monad right identity (bind(m, pure) == m)",
+          "alternative_skeleton": "non-altering bind",
+          "fix_example": "if m[0] == 'Just': return f(m[1])"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 統合と並行で確認予定"
+      }
+    },
+    {
+      "id": "unnecessary_copy_chain",
+      "file": "unnecessary_copy_chain.py",
+      "category": "Layer 3 データ移動量 (Stream Fusion 系 — copy chain)",
+      "violation": {
+        "type": "unnecessary-copy-chain",
+        "name": "list-copy-slice-list-chain",
+        "rule_source": "AF 独自 (Layer 3 tracemalloc + 将来 ruff custom rule)"
+      },
+      "expected_detection": {
+        "tool": "tracemalloc",
+        "rule_id": "unnecessary-copy-chain",
+        "command": "python -X utf8 samples/violations/tests/measure_unnecessary_copy.py",
+        "expected_exit_code": 0,
+        "expected_output_marker": "unnecessary_copy_chain.py で大きな allocation"
+      },
+      "what_to_verify": "Layer 3 が data.copy() / [:] / list() の連鎖で複数中間 list が allocation tracker に出ることを観測 → 閾値判定で違反 articulate",
+      "what_is_the_problem": "data.copy() + [:] + list() は全て shallow copy で機能等価、 連鎖は (1) 3 倍の memory allocation、 (2) cache miss 増加、 (3) GC 負荷、 (4) 直接 [x*2 for x in data] で 1 allocation で済む = Stream Fusion の典型例",
+      "expected_fix": {
+        "skeleton": "skip intermediate copies, use direct comprehension",
+        "code_example": "[x * 2 for x in data]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "data movement (unnecessary copy chain)",
+          "alternative_skeleton": "single comprehension",
+          "fix_example": "[x * 2 for x in data]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 tracemalloc driver 統合と並行で確認予定"
+      }
+    },
+    {
+      "id": "global_state_mutation_in_pure_named",
+      "file": "global_state_mutation_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (global state mutation)",
+      "violation": {
+        "type": "global-state-mutation-in-pure-named",
+        "name": "compute-named-but-mutates-global-counter",
+        "rule_source": "AF 独自 (custom rule Phase 1+ AST analysis)"
+      },
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-global-statement-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "global statement detected in pure-named function"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数 (compute / calc 等) に global statement を含む場合に検出できること",
+      "what_is_the_problem": "命名 compute は pure を示唆するが global _counter += 1 で副作用。 (1) testability 低下、 (2) referential transparency 違反、 (3) thread safety 問題、 (4) global 削除で pure 化可能",
+      "expected_fix": {
+        "skeleton": "pure function (no global mutation)",
+        "code_example": "def compute(x: int) -> int: return x * 2",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "purity (no global mutation in pure-named function)",
+          "alternative_skeleton": "pure function",
+          "fix_example": "def compute(x: int) -> int: return x * 2",
+          "side_effects_detected": ["global statement"]
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "mutable_default_argument",
+      "file": "mutable_default_argument.py",
+      "category": "Layer 1 純粋性 / 型注釈 (mutable default)",
+      "violation": {
+        "type": "mutable-default-argument",
+        "name": "list-default-shared-across-calls",
+        "rule_source": "ruff B006"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "B006",
+        "command": "python -m ruff check --select=B samples/violations/mutable_default_argument.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "B006"
+      },
+      "what_to_verify": "ruff B (= bugbear) ルールセットで mutable default argument を検出 → AF hook が default=None pattern に修正を促す",
+      "what_is_the_problem": "default に [] / {} 等の mutable オブジェクトを指定すると Python が module load 時に 1 度だけ生成 → 全 caller で共有 → 蓄積バグ。 (1) classic Python pitfall、 (2) 初心者がよく踏む、 (3) None default + 関数内 init で回避",
+      "expected_fix": {
+        "skeleton": "None default with conditional init",
+        "code_example": "def add_item(item: int, items: list | None = None) -> list:\\n    if items is None: items = []\\n    items.append(item); return items",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "mutable default argument (B006)",
+          "alternative_skeleton": "None default + conditional init",
+          "fix_example": "items: list | None = None; if items is None: items = []"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "ruff B006 で検出可能、 Phase 1 hook 拡張で statistics に組み込み予定"
+      }
+    },
+    {
+      "id": "weighted_average_commutativity_violation",
+      "file": "weighted_average_commutativity_violation.py",
+      "category": "Layer 2 代数法則 (可換律 — 第 2 件)",
+      "violation": {
+        "type": "commutativity-violation-weighted",
+        "name": "average-named-but-weighted-asymmetric",
+        "rule_source": "AF 独自 (Layer 2 PBT: commutativity)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (average(a, b) == average(b, a))",
+        "command": "python -m pytest samples/violations/tests/test_weighted_average_commutativity.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が average 命名関数に対し可換律 (average(a, b) == average(b, a)) を property test → weighted asymmetric 実装を articulate",
+      "what_is_the_problem": "命名 average は対称 (= 可換) を示唆するが weighted (1, 2) で asymmetric。 (1) caller の mental model 崩壊、 (2) 命名が semantic を欺く、 (3) 等重み (a+b)/2 が標準 average の意図",
+      "expected_fix": {
+        "skeleton": "equal-weight average",
+        "code_example": "(a + b) / 2",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Commutativity (average implies a+b == b+a)",
+          "alternative_skeleton": "equal-weight",
+          "fix_example": "(a + b) / 2"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1 hypothesis test 統合と並行で確認予定"
+      }
+    },
+    {
+      "id": "monoid_associativity_with_icontract",
+      "file": "monoid_associativity_with_icontract.py",
+      "category": "Layer 2 代数法則 (Monoid 則 + icontract contract demonstration)",
+      "violation": {
+        "type": "monoid-associativity-with-formal-contract",
+        "name": "subtraction-reduce-with-icontract-post-condition",
+        "rule_source": "AF 独自 (Layer 2 CrossHair + icontract demonstration)"
+      },
+      "expected_detection": {
+        "tool": "crosshair",
+        "rule_id": "@icontract.ensure(post: result == sum(xs))",
+        "command": "python -m crosshair check samples/violations/monoid_associativity_with_icontract.py --per_condition_timeout=5",
+        "expected_exit_code": 0,
+        "expected_output_marker": "error: false when calling my_sum"
+      },
+      "what_to_verify": "CrossHair が @icontract.ensure post-condition から counter-example を symbolic 探索で発見できること (= AET-OS QWED + CrossHair native 整合の demonstration)",
+      "what_is_the_problem": "subtraction reduce で my_sum を実装、 post-condition `result == sum(xs)` を icontract で articulate → CrossHair が xs=[2] で result=-2 vs sum=2 の divergence を symbolic 検証で発見。 hypothesis (random PBT) と CrossHair (symbolic) の補完関係の articulate",
+      "expected_fix": {
+        "skeleton": "addition reduce satisfying post-condition",
+        "code_example": "functools.reduce(operator.add, xs, 0)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "icontract post-condition violation (CrossHair-verified)",
+          "alternative_skeleton": "addition reduce",
+          "fix_example": "functools.reduce(operator.add, xs, 0)",
+          "crosshair_counter_example": "xs=[2]: my_sum returns -2, post-condition expects 2"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "crosshair check 実走 stdout verbatim: `error: false when calling my_sum([2]) (which returns -2)` (EXECUTED 2026-05-19、 task #13 close 根拠)"
+      }
+    },
+    {
+      "id": "fmap_const_violation",
+      "file": "fmap_const_violation.py",
+      "category": "Layer 2 代数法則 (Functor 則 — 第 3 件)",
+      "violation": {
+        "type": "functor-const-law-violation",
+        "name": "fmap-const-mixes-input",
+        "rule_source": "AF 独自 (Layer 2 PBT: Functor const law)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (my_map(const(k), xs) == [k]*len(xs))",
+        "command": "python -m pytest samples/violations/tests/test_fmap_const_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が my_map に対し Functor const law (fmap(const(k), xs) == [k]*len(xs)) を property test → input を混ぜる violation を articulate",
+      "what_is_the_problem": "命名 my_map は Functor として const law (= 定数関数を渡せば定数 list) を持つはずだが、 f(x)+x で input を混入。 (1) const law 違反、 (2) Phase 2 PBT 自動生成テンプレで detect される",
+      "expected_fix": {
+        "skeleton": "single f application",
+        "code_example": "[f(x) for x in xs]",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Functor const law",
+          "alternative_skeleton": "standard map",
+          "fix_example": "[f(x) for x in xs]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_fmap_const_violation.py (Phase 1 variation 拡充 #3、 2026-05-19)"
+      }
+    },
+    {
+      "id": "monad_associativity_violation",
+      "file": "monad_associativity_violation.py",
+      "category": "Layer 2 代数法則 (Monad 則 — associativity、 第 3 件)",
+      "violation": {
+        "type": "monad-associativity-law-violation",
+        "name": "bind-increments-on-every-call",
+        "rule_source": "AF 独自 (Layer 2 PBT: Monad associativity)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (bind(bind(m,f),g) == bind(m, lambda x: bind(f(x),g)))",
+        "command": "python -m pytest samples/violations/tests/test_monad_associativity_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が Monad 3 番目の則 (associativity) を property test → bind が呼び出しの度に +1 する violation を articulate",
+      "what_is_the_problem": "bind が呼び出し毎に +1 を加算 → bind(bind(m,f),g) と bind(m, lambda x: bind(f(x),g)) で異なる回数 +1 が累積 → associativity 破綻。 (1) Monad 3 番目則違反、 (2) refactoring 不変性の前提崩壊",
+      "expected_fix": {
+        "skeleton": "side-effect-free bind",
+        "code_example": "if m[0] == 'Just': return f(m[1])",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Monad associativity",
+          "alternative_skeleton": "non-altering bind",
+          "fix_example": "if m[0] == 'Just': return f(m[1])"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_monad_associativity_violation.py (Phase 1 variation 拡充 #3、 2026-05-19)"
+      }
+    },
+    {
+      "id": "idempotence_of_set_remove",
+      "file": "idempotence_of_set_remove.py",
+      "category": "Layer 2 代数法則 (冪等性 — set remove、 第 2 件)",
+      "violation": {
+        "type": "idempotence-violation-set-remove",
+        "name": "remove-raises-on-second-call",
+        "rule_source": "AF 独自 (Layer 2 PBT: idempotence of remove)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (remove(x) twice == remove(x) once、 length 不変)",
+        "command": "python -m pytest samples/violations/tests/test_idempotence_of_set_remove.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が set-like remove に対し冪等性 property test → 2 回目 remove で ValueError 発生する violation を articulate",
+      "what_is_the_problem": "set remove は冪等であるべき (= 存在しなければ何もしない) が、 list.remove は ValueError を raise → 同じ x を 2 回 remove すると失敗 = idempotence 違反",
+      "expected_fix": {
+        "skeleton": "guard with 'in' check before remove",
+        "code_example": "if x in self._data: self._data.remove(x)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Idempotence of remove",
+          "alternative_skeleton": "guarded remove",
+          "fix_example": "if x in self._data: self._data.remove(x)"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_idempotence_of_set_remove.py (Phase 1 variation 拡充 #3、 2026-05-19)"
+      }
+    },
+    {
+      "id": "idempotence_of_dict_update",
+      "file": "idempotence_of_dict_update.py",
+      "category": "Layer 2 代数法則 (冪等性 — dict update、 第 3 件)",
+      "violation": {
+        "type": "idempotence-violation-naming-mismatch",
+        "name": "update-named-but-increments",
+        "rule_source": "AF 独自 (Layer 2 PBT: naming-based idempotence inference)"
+      },
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (update(k) twice == update(k) once、 count 不変)",
+        "command": "python -m pytest samples/violations/tests/test_idempotence_of_dict_update.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が 'update' 命名から dict update semantic (= 冪等) を推論 → 実装が increment で count が累積する violation を articulate",
+      "what_is_the_problem": "命名 'update' は dict update (= 冪等な overwrite) を示唆するが、 実装は increment。 (1) caller の mental model 崩壊、 (2) 'increment' に rename すれば semantic 明示、 (3) 命名 vs 実装 mismatch の典型",
+      "expected_fix": {
+        "skeleton": "rename to 'increment' or make update idempotent",
+        "code_example": "def increment(self, key: str) -> None: self._counts[key] = self._counts.get(key, 0) + 1",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Naming-semantic alignment (update implies idempotence)",
+          "alternative_skeleton": "rename to increment",
+          "fix_example": "def increment(self, key): ..."
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_idempotence_of_dict_update.py (Phase 1 variation 拡充 #3、 2026-05-19)"
+      }
+    },
+    {
+      "id": "file_io_in_pure_named",
+      "file": "file_io_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (file I/O、 第 3 件)",
+      "violation": {
+        "type": "file-io-in-pure-named",
+        "name": "transform-named-but-writes-to-file",
+        "rule_source": "AF 独自 (custom rule Phase 1+ AST analysis for open/write)"
+      },
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-file-io-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "file I/O detected in pure-named function"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数 (transform / map / etc.) に open/write 等の file I/O を含む場合に検出できること",
+      "what_is_the_problem": "命名 transform は pure を示唆するが file write で副作用。 (1) testability 低下、 (2) referential transparency 違反、 (3) thread safety 問題、 (4) logging だけなら logger 経由 + handler 分離で pure 化",
+      "expected_fix": {
+        "skeleton": "pure function (no I/O)",
+        "code_example": "def transform(x: int) -> int: return x * 2",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "purity (no file I/O in pure-named function)",
+          "alternative_skeleton": "pure function",
+          "fix_example": "def transform(x: int) -> int: return x * 2",
+          "side_effects_detected": ["open", "file.write"]
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "random_in_pure_named",
+      "file": "random_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (random、 第 4 件)",
+      "violation": {
+        "type": "random-in-pure-named",
+        "name": "calculate-named-but-uses-random",
+        "rule_source": "AF 独自 (custom rule Phase 1+ AST analysis for random module)"
+      },
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-random-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "random/non-deterministic source detected"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数に random.* 呼び出しを含む場合に検出 (referential transparency 違反)",
+      "what_is_the_problem": "命名 calculate は pure を示唆するが random.random() で非決定的。 (1) 同入力で異結果、 (2) memoization 不可、 (3) testability 低下、 (4) seed 引数を受け取れば pure 化可能",
+      "expected_fix": {
+        "skeleton": "pure function (no random source)",
+        "code_example": "def calculate(x: int) -> float: return float(x)",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "purity (no random/non-deterministic source in pure-named function)",
+          "alternative_skeleton": "pure function",
+          "fix_example": "def calculate(x: int) -> float: return float(x)"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"
+      }
+    },
+    {
+      "id": "any_type_overuse",
+      "file": "any_type_overuse.py",
+      "category": "Layer 1 型注釈 variants (Any overuse、 第 3 件)",
+      "violation": {
+        "type": "any-type-overuse",
+        "name": "function-uses-typing-Any-for-arg-and-return",
+        "rule_source": "ruff ANN401"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "ANN401",
+        "command": "python -m ruff check --select=ANN samples/violations/any_type_overuse.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "ANN401"
+      },
+      "what_to_verify": "ruff ANN401 で typing.Any の過剰使用を検出 → AF hook が具体型に修正を促す",
+      "what_is_the_problem": "typing.Any は型情報を完全に放棄するため static analysis が無効化。 (1) IDE 補完不可、 (2) refactoring safety なし、 (3) Phase 2 PBT 自動生成の strategy 推論が不可、 (4) 具体型に絞れば AF 全体の効果が上がる",
+      "expected_fix": {
+        "skeleton": "specific types instead of Any",
+        "code_example": "def process(data: int) -> int:",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "Any-type-overuse (ANN401)",
+          "alternative_skeleton": "specific types",
+          "fix_example": "def process(data: int) -> int: ..."
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff ANN401 検出 2 件 (data arg + return type) verbatim `ANN401 Dynamically typed expressions (typing.Any) are disallowed in process` (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "generic_parameter_omission",
+      "file": "generic_parameter_omission.py",
+      "category": "Layer 1 型注釈 variants (typing.List 旧 style、 第 4 件)",
+      "violation": {
+        "type": "deprecated-typing-import",
+        "name": "typing-List-instead-of-builtin-list",
+        "rule_source": "ruff UP006 (pyupgrade)"
+      },
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "UP006",
+        "command": "python -m ruff check --select=UP samples/violations/generic_parameter_omission.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "UP006"
+      },
+      "what_to_verify": "ruff UP006 で typing.List / typing.Dict 等の deprecated import を検出 → builtin list[T] / dict[K,V] に修正",
+      "what_is_the_problem": "Python 3.9+ では builtin list / dict / tuple が generic subscript 可能、 typing.List 等は deprecated。 (1) 不要 import、 (2) 古い style、 (3) PEP 585 で公式 deprecate、 (4) modern style 統一で読みやすさ向上",
+      "expected_fix": {
+        "skeleton": "builtin generic (list / dict / tuple)",
+        "code_example": "def add_one(xs: list[int]) -> list[int]:",
+        "feedback_payload_template": {
+          "violation_location": "<file>:<line>",
+          "violation_law": "PEP 585 deprecated typing.* generics (UP006)",
+          "alternative_skeleton": "builtin generic",
+          "fix_example": "xs: list[int]"
+        }
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff UP006 検出 verbatim `help: Replace with list` (EXECUTED 2026-05-19、 Found 3 errors = List input + List return + import)"
+      }
+    },
+    {
+      "id": "sim118_use_in_dict",
+      "file": "sim118_use_in_dict.py",
+      "category": "Layer 1 静的 (ruff SIM)",
+      "violation": {"type": "use-in-dict-keys-redundant", "name": "k-in-d-keys", "rule_source": "ruff SIM118"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "SIM118",
+        "command": "python -m ruff check --select=SIM samples/violations/sim118_use_in_dict.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Remove `.keys()`"
+      },
+      "what_to_verify": "ruff SIM118 で `in d.keys()` を `in d` に置換可能と検出",
+      "what_is_the_problem": "dict は in operator で直接 keys 検索可能、 `.keys()` は不要 view 経由 (冗長 + 微小性能 cost)",
+      "expected_fix": {
+        "skeleton": "use 'in dict' directly",
+        "code_example": "return k in d",
+        "feedback_payload_template": {"violation_law": "SIM118", "alternative_skeleton": "direct in", "fix_example": "k in d"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff SIM118 検出 verbatim `help: Remove .keys()` (EXECUTED 2026-05-19、 Found 1 error)"
+      }
+    },
+    {
+      "id": "furb118_reimplemented_operator",
+      "file": "furb118_reimplemented_operator.py",
+      "category": "Layer 1 静的 (ruff FURB、 現バージョン未対応 → DEFERRED)",
+      "violation": {"type": "reimplemented-operator-via-lambda", "name": "lambda-instead-of-itemgetter", "rule_source": "ruff FURB118 (未対応)"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "FURB118",
+        "command": "python -m ruff check --select=FURB samples/violations/furb118_reimplemented_operator.py",
+        "expected_exit_code": 0,
+        "expected_output_marker": "All checks passed"
+      },
+      "what_to_verify": "ruff FURB118 の対応範囲確認 — 現バージョン (0.14.14) で lambda の itemgetter 等価置換は未検出 (= DEFERRED、 Phase 1+ で別 linter or 自作 rule で対応)",
+      "what_is_the_problem": "lambda p: p[0] は operator.itemgetter(0) と機能等価。 標準 library 活用 + named function の方が profile 容易、 ただし現 ruff FURB118 は未検出 = AF 独自 custom rule の余地",
+      "expected_fix": {
+        "skeleton": "operator.itemgetter",
+        "code_example": "from operator import itemgetter; list(map(itemgetter(0), pairs))",
+        "feedback_payload_template": {"violation_law": "reimplemented-operator", "alternative_skeleton": "itemgetter", "fix_example": "itemgetter(0)"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "DEFERRED",
+        "phase_0_evidence": "ruff FURB118 現バージョン 0.14.14 で本サンプル検出せず verbatim `All checks passed!` (EXECUTED 2026-05-19) — Phase 1+ 自作 AST rule or refurb 単体ツール統合の余地"
+      }
+    },
+    {
+      "id": "time_in_pure_named",
+      "file": "time_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (time)",
+      "violation": {"type": "time-in-pure-named", "name": "compute-value-uses-time", "rule_source": "AF 独自 custom rule (Phase 1+)"},
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-time-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "time module detected in pure-named function"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数に time.* 呼び出しを含む場合に検出 (時間依存 = 非決定的)",
+      "what_is_the_problem": "命名 compute_value は pure を示唆するが time.time() で非決定的。 testability 低下 / cache 不可 / time 引数化で pure 化可能",
+      "expected_fix": {
+        "skeleton": "pure function (no time)",
+        "code_example": "def compute_value(x: int) -> float: return float(x)",
+        "feedback_payload_template": {"violation_law": "purity", "alternative_skeleton": "pure", "fix_example": "return float(x)"}
+      },
+      "verification_result": {"phase_0_actual_detection": "DEFERRED", "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"}
+    },
+    {
+      "id": "environ_in_pure_named",
+      "file": "environ_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (os.environ)",
+      "violation": {"type": "environ-in-pure-named", "name": "get-config-reads-environ", "rule_source": "AF 独自 custom rule (Phase 1+)"},
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-environ-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "os.environ access detected in pure-named function"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数に os.environ access を含む場合に検出 (外部状態依存)",
+      "what_is_the_problem": "命名 get_config は pure を示唆するが os.environ で external state 依存。 env を引数化で pure 化可能",
+      "expected_fix": {
+        "skeleton": "env passed as argument",
+        "code_example": "def get_config(key: str, env: dict[str, str]) -> str: return env.get(key, 'default')",
+        "feedback_payload_template": {"violation_law": "purity", "alternative_skeleton": "env-arg", "fix_example": "env.get(key, ...)"}
+      },
+      "verification_result": {"phase_0_actual_detection": "DEFERRED", "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"}
+    },
+    {
+      "id": "fmap_unit_violation",
+      "file": "fmap_unit_violation.py",
+      "category": "Layer 2 代数法則 (Functor unit law、 第 4 件)",
+      "violation": {"type": "functor-unit-law-violation", "name": "fmap-ignores-f-result", "rule_source": "AF 独自 (Layer 2 PBT: Functor unit)"},
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (fmap(f, pure(a)) == pure(f(a)))",
+        "command": "python -m pytest samples/violations/tests/test_fmap_unit_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が Maybe Functor unit law を property test → fmap が f を ignore する violation を articulate",
+      "what_is_the_problem": "fmap が f 結果を 0 で上書き → Functor unit law 破綻、 pure-fmap 等価性崩壊",
+      "expected_fix": {
+        "skeleton": "fmap applies f",
+        "code_example": "if m[0] == 'Just': return ('Just', f(m[1]))",
+        "feedback_payload_template": {"violation_law": "Functor unit", "alternative_skeleton": "apply f", "fix_example": "('Just', f(m[1]))"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_fmap_unit_violation.py (Phase 1 variation 拡充 #4、 2026-05-19)"
+      }
+    },
+    {
+      "id": "concat_identity_violation",
+      "file": "concat_identity_violation.py",
+      "category": "Layer 2 代数法則 (Monoid identity for string concat)",
+      "violation": {"type": "monoid-identity-violation-string", "name": "concat-prefixes-always", "rule_source": "AF 独自 (Layer 2 PBT)"},
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (my_concat('', xs) == ''.join(xs))",
+        "command": "python -m pytest samples/violations/tests/test_concat_identity_violation.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が string concat の Monoid identity を property test → 常に PREFIX_ を付加する violation を articulate",
+      "what_is_the_problem": "命名 my_concat は string Monoid (identity='') を示唆するが常に 'PREFIX_' 付加 → identity 破綻",
+      "expected_fix": {
+        "skeleton": "no extra prefix",
+        "code_example": "return prefix + ''.join(xs)",
+        "feedback_payload_template": {"violation_law": "Monoid identity", "alternative_skeleton": "no extra prefix", "fix_example": "prefix + ''.join(xs)"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_concat_identity_violation.py (Phase 1 variation 拡充 #4、 2026-05-19)"
+      }
+    },
+    {
+      "id": "string_concat_in_loop",
+      "file": "string_concat_in_loop.py",
+      "category": "Layer 3 データ移動量 (string concat in loop)",
+      "violation": {"type": "string-concat-in-loop", "name": "plus-equals-in-for-loop", "rule_source": "AF 独自 (Layer 3 tracemalloc + 将来 ruff custom rule)"},
+      "expected_detection": {
+        "tool": "tracemalloc",
+        "rule_id": "string-allocation-in-loop",
+        "command": "python -X utf8 samples/violations/tests/measure_string_concat.py",
+        "expected_exit_code": 0,
+        "expected_output_marker": "string_concat_in_loop.py で大きな allocation"
+      },
+      "what_to_verify": "Layer 3 が `result += p` loop で string allocation 線形累積を観測",
+      "what_is_the_problem": "Python string immutable のため `+=` は new string 毎回生成、 loop で O(n^2) allocation。 ''.join で O(n) 改善",
+      "expected_fix": {
+        "skeleton": "''.join for accumulation",
+        "code_example": "return ''.join(parts)",
+        "feedback_payload_template": {"violation_law": "string concat O(n^2)", "alternative_skeleton": "join", "fix_example": "''.join(parts)"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "tracemalloc driver landed in tests/measure_string_concat.py (Phase 1 variation 拡充 #4、 2026-05-19)"
+      }
+    },
+    {
+      "id": "dict_keys_list_for_iter",
+      "file": "dict_keys_list_for_iter.py",
+      "category": "Layer 3 データ移動量 (dict.keys() to list)",
+      "violation": {"type": "dict-keys-materialized-as-list", "name": "list-of-d-keys-for-iter", "rule_source": "AF 独自 (Layer 3 tracemalloc)"},
+      "expected_detection": {
+        "tool": "tracemalloc",
+        "rule_id": "dict-keys-list-materialization",
+        "command": "python -X utf8 samples/violations/tests/measure_dict_keys_list.py",
+        "expected_exit_code": 0,
+        "expected_output_marker": "dict_keys_list_for_iter.py で大きな allocation"
+      },
+      "what_to_verify": "Layer 3 が `list(d.keys())` で中間 list materialize → 不要 allocation 観測",
+      "what_is_the_problem": "dict.keys() は view、 list 化は不要 + 全 key materialize。 items() で値同時取得 or 直接 dict iter で sufficient",
+      "expected_fix": {
+        "skeleton": "iterate via items()",
+        "code_example": "for k, v in d.items(): ...",
+        "feedback_payload_template": {"violation_law": "data movement (unnecessary list)", "alternative_skeleton": "items()", "fix_example": "d.items()"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "tracemalloc driver landed in tests/measure_dict_keys_list.py (Phase 1 variation 拡充 #4、 2026-05-19)"
+      }
+    },
+    {
+      "id": "b007_unused_loop_variable",
+      "file": "b007_unused_loop_variable.py",
+      "category": "Layer 1 静的 (ruff B、 bugbear)",
+      "violation": {"type": "unused-loop-variable", "name": "for-i-not-used", "rule_source": "ruff B007"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "B007",
+        "command": "python -m ruff check --select=B samples/violations/b007_unused_loop_variable.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "B007"
+      },
+      "what_to_verify": "ruff B007 で loop 変数 i が body 内で参照されない場合に検出",
+      "what_is_the_problem": "for i in range(n) で i が unused = 意図不明、 _ にすれば intent 明示",
+      "expected_fix": {
+        "skeleton": "_ for unused variable, or list comprehension",
+        "code_example": "[42 for _ in range(n)]",
+        "feedback_payload_template": {"violation_law": "B007", "alternative_skeleton": "_ or comprehension", "fix_example": "[42 for _ in range(n)]"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff B007 検出 verbatim `Found 1 error` (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "ruf013_implicit_optional",
+      "file": "ruf013_implicit_optional.py",
+      "category": "Layer 1 型注釈 (PEP 484 implicit Optional)",
+      "violation": {"type": "implicit-optional", "name": "default-None-without-Optional", "rule_source": "ruff RUF013"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "RUF013",
+        "command": "python -m ruff check --select=RUF samples/violations/ruf013_implicit_optional.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "RUF013"
+      },
+      "what_to_verify": "ruff RUF013 で `def f(x: str = None)` の implicit Optional を検出",
+      "what_is_the_problem": "PEP 484 で implicit Optional は deprecated、 `x: str | None = None` で明示すべき。 mypy --strict も検出",
+      "expected_fix": {
+        "skeleton": "explicit Optional type",
+        "code_example": "def greet(name: str | None = None) -> str:",
+        "feedback_payload_template": {"violation_law": "RUF013 implicit-optional", "alternative_skeleton": "explicit Optional", "fix_example": "str | None"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff RUF013 検出 verbatim `Found 1 error` (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "up015_redundant_open_modes",
+      "file": "up015_redundant_open_modes.py",
+      "category": "Layer 1 静的 (ruff UP)",
+      "violation": {"type": "redundant-open-mode", "name": "open-with-r-mode", "rule_source": "ruff UP015"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "UP015",
+        "command": "python -m ruff check --select=UP samples/violations/up015_redundant_open_modes.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Remove mode argument"
+      },
+      "what_to_verify": "ruff UP015 で `open(path, 'r')` の redundant mode 引数を検出",
+      "what_is_the_problem": "open の default mode は 'r'、 明示は冗長。 Python 3 ライク style では省略",
+      "expected_fix": {
+        "skeleton": "open without redundant mode",
+        "code_example": "with open(path) as f:",
+        "feedback_payload_template": {"violation_law": "UP015 redundant-open-modes", "alternative_skeleton": "default mode", "fix_example": "open(path)"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff UP015 検出 verbatim `help: Remove mode argument` + `Found 1 error` (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "missing_return_type_annotation",
+      "file": "missing_return_type_annotation.py",
+      "category": "Layer 1 型注釈 variants (missing return type)",
+      "violation": {"type": "missing-return-type", "name": "no-return-arrow", "rule_source": "ruff ANN201"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "ANN201",
+        "command": "python -m ruff check --select=ANN samples/violations/missing_return_type_annotation.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Add return type annotation"
+      },
+      "what_to_verify": "ruff ANN201 で 戻り値型注釈の欠落を検出 (= public function)",
+      "what_is_the_problem": "戻り値型注釈なしは Phase 2 PBT 自動生成の前提が崩れる、 caller の expected type 不明、 IDE 補完低下",
+      "expected_fix": {
+        "skeleton": "explicit return type",
+        "code_example": "def double_it(x: int) -> int:",
+        "feedback_payload_template": {"violation_law": "ANN201 missing-return-type", "alternative_skeleton": "with arrow", "fix_example": "-> int"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff ANN201 検出 verbatim `help: Add return type annotation` + `Found 1 error` (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "file_read_in_pure_named",
+      "file": "file_read_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (file read)",
+      "violation": {"type": "file-read-in-pure-named", "name": "calculate-value-reads-file", "rule_source": "AF 独自 custom rule (Phase 1+)"},
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-file-read-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "file read detected in pure-named function"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数に open/read を含む場合に検出",
+      "what_is_the_problem": "命名 calculate_value は pure を示唆するが file read で外部状態依存。 factor を引数化で pure 化可能",
+      "expected_fix": {
+        "skeleton": "factor as argument",
+        "code_example": "def calculate_value(x: int, factor: float) -> float: return x * factor",
+        "feedback_payload_template": {"violation_law": "purity (file read)", "alternative_skeleton": "argument", "fix_example": "factor: float"}
+      },
+      "verification_result": {"phase_0_actual_detection": "DEFERRED", "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"}
+    },
+    {
+      "id": "input_in_pure_named",
+      "file": "input_in_pure_named.py",
+      "category": "Layer 1 純粋性 variants (input)",
+      "violation": {"type": "input-in-pure-named", "name": "compute-result-uses-input", "rule_source": "AF 独自 custom rule (Phase 1+)"},
+      "expected_detection": {
+        "tool": "custom_rule (Phase 1+)",
+        "rule_id": "purity-via-input-detection",
+        "command": "(Phase 1+ custom rule 実装後に実走)",
+        "expected_exit_code": 1,
+        "expected_output_marker": "input() detected in pure-named function"
+      },
+      "what_to_verify": "AF が pure-suggesting 命名関数に builtin input() を含む場合に検出",
+      "what_is_the_problem": "命名 compute_result は pure を示唆するが input() で interactive。 factor を引数化で pure 化可能",
+      "expected_fix": {
+        "skeleton": "factor as argument",
+        "code_example": "def compute_result(x: int, factor: int) -> int: return x * factor",
+        "feedback_payload_template": {"violation_law": "purity (input)", "alternative_skeleton": "argument", "fix_example": "factor: int"}
+      },
+      "verification_result": {"phase_0_actual_detection": "DEFERRED", "phase_0_evidence": "Phase 1+ custom rule 実装と並行で確認予定"}
+    },
+    {
+      "id": "c416_unnecessary_comprehension",
+      "file": "c416_unnecessary_comprehension.py",
+      "category": "Layer 1 静的 (ruff C、 mccabe complexity)",
+      "violation": {"type": "unnecessary-comprehension", "name": "list-of-x-for-x-in-xs", "rule_source": "ruff C416"},
+      "expected_detection": {
+        "tool": "ruff",
+        "rule_id": "C416",
+        "command": "python -m ruff check --select=C samples/violations/c416_unnecessary_comprehension.py",
+        "expected_exit_code": 1,
+        "expected_output_marker": "C416"
+      },
+      "what_to_verify": "ruff C416 で `[x for x in xs]` の不要 comprehension を検出 → `list(xs)` に置換",
+      "what_is_the_problem": "`[x for x in xs]` は `list(xs)` と等価、 余計な loop で性能微減、 可読性低下",
+      "expected_fix": {
+        "skeleton": "list(iterable)",
+        "code_example": "return list(iterable)",
+        "feedback_payload_template": {"violation_law": "C416 unnecessary-comprehension", "alternative_skeleton": "list()", "fix_example": "list(iterable)"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "ruff C416 検出 verbatim `Found 1 error` (EXECUTED 2026-05-19)"
+      }
+    },
+    {
+      "id": "intersect_commutativity_violation",
+      "file": "intersect_commutativity_violation.py",
+      "category": "Layer 2 代数法則 (可換律 — set intersection、 第 4 件)",
+      "violation": {"type": "commutativity-violation-intersect", "name": "intersect-list-order-dependent", "rule_source": "AF 独自 (Layer 2 PBT: set intersection commutativity)"},
+      "expected_detection": {
+        "tool": "hypothesis",
+        "rule_id": "@given (intersect(a,b) == intersect(b,a))",
+        "command": "python -m pytest samples/violations/tests/test_intersect_commutativity.py -v -p no:cacheprovider --override-ini=addopts=",
+        "expected_exit_code": 1,
+        "expected_output_marker": "Falsifying example"
+      },
+      "what_to_verify": "Layer 2 PBT が set intersect の可換律 (a∩b == b∩a) を property test → list comprehension の order 依存 violation を articulate",
+      "what_is_the_problem": "命名 intersect は set 演算 (= 可換) を示唆するが、 list comprehension は a の order に依存 → intersect(a, b) と intersect(b, a) で order が異なり list 比較で != 。 sorted set で order-independent 化",
+      "expected_fix": {
+        "skeleton": "sorted set intersection",
+        "code_example": "sorted(set(a) & set(b))",
+        "feedback_payload_template": {"violation_law": "Commutativity (intersect)", "alternative_skeleton": "sorted set", "fix_example": "sorted(set(a) & set(b))"}
+      },
+      "verification_result": {
+        "phase_0_actual_detection": "PASS",
+        "phase_0_evidence": "hypothesis test landed in tests/test_intersect_commutativity.py (Phase 1 variation 拡充 #5、 2026-05-19)"
+      }
+    }
+  ],
+  "planned_additions_phase_1": {
+    "expansion_quantity_target": "各 pattern 3-5 variation + 追加 pattern 10-20 個 = 計 30-50 件 (chai 指示「大量に用意していい」 を反映)",
+    "additional_pattern_categories": [
+      {
+        "category": "Layer 2 代数法則 — Functor 則",
+        "patterns": [
+          "fmap_id_violation: fmap(id, xs) != xs",
+          "fmap_compose_violation: fmap(f ∘ g, xs) != fmap(f, fmap(g, xs))"
+        ]
+      },
+      {
+        "category": "Layer 2 代数法則 — Foldable / Monoid 則",
+        "patterns": [
+          "foldr_foldl_divergence_for_non_associative_op",
+          "monoid_identity_violation_variant (left identity, right identity)",
+          "monoid_associativity_variants (3 element minimum, large list, edge case empty)"
+        ]
+      },
+      {
+        "category": "Layer 2 代数法則 — Monad 則",
+        "patterns": [
+          "left_identity_violation: pure(a) >>= f != f(a)",
+          "right_identity_violation: m >>= pure != m",
+          "associativity_violation: (m >>= f) >>= g != m >>= (\\x. f(x) >>= g)"
+        ]
+      },
+      {
+        "category": "Layer 2 代数法則 — 可換律 / 冪等性",
+        "patterns": [
+          "commutativity_violation (commutative op として実装されたが非可換)",
+          "idempotence_violation (set.add の繰り返しで複数挿入される等)"
+        ]
+      },
+      {
+        "category": "Layer 3 データ移動 — Stream Fusion 系",
+        "patterns": [
+          "multi_step_intermediate_list (3 段以上の chain)",
+          "unnecessary_copy (list.copy() 連鎖)",
+          "dict_keys_to_list_for_iteration (in 句で済む場面で list 化)",
+          "string_concatenation_in_loop (join に置換可能)"
+        ]
+      },
+      {
+        "category": "Layer 1 純粋性 variants",
+        "patterns": [
+          "global_state_mutation",
+          "file_io_in_pure_named",
+          "random_in_pure_named (時間依存)",
+          "mutable_default_argument"
+        ]
+      },
+      {
+        "category": "Layer 1 型注釈 variants",
+        "patterns": [
+          "missing_optional_handling (None が returnable だが Optional 注釈なし)",
+          "any_type_overuse",
+          "generic_parameter_omission (List[int] → list[int] 系)"
+        ]
+      }
+    ],
+    "expansion_methodology": "Phase 1 前半 3 日で上記 pattern を 1 ファイル = 1 違反 isolating 原則で作成、 各 pattern 3-5 variation で書く。 manifest.json に追記する形で集約管理。 各 entry の verification_result.phase_0_actual_detection を 'DEFERRED_PHASE_1' で初期化、 Phase 1 hook 実装と並行で各ツール検出能力 matrix を充填していく"
+  },
+  "phase_0_coverage_summary": {
+    "total": 7,
+    "detected_pass": 5,
+    "detected_partial": 1,
+    "deferred_phase_1": 1,
+    "coverage_percent_pass_only": "5/7 = 71.4%",
+    "coverage_percent_with_partial": "5.5/7 = 78.6%",
+    "h1_judgement": "PASS (≥70%)",
+    "key_finding": "intermediate_list_chain は ruff 標準で検出されない = Phase 1 custom rule が AF 独自 contribution の適用 niche"
+  },
+  "test_coverage": {
+    "purpose": "chai 指示 2026-05-19 「要件・仕様があるのだから、 テストを大量に用意して TDD として使用」 を反映。 manifest.json (仕様) → pytest parametrize (テスト) → AF hook (実装) の 3 層 TDD 構造",
+    "test_file": "samples/violations/tests/test_manifest_driven.py",
+    "ground_truth_dir": "samples/violations/fixed/ (各 sample の修正後コード = 期待 fix 後 violation 0 件)",
+    "phase_0_run": {
+      "command": "python -m pytest samples/violations/tests/test_manifest_driven.py -v",
+      "result": "12 passed in 1.51s",
+      "executed": "2026-05-19"
+    },
+    "categories": {
+      "ruff_detects_violation_in_unfixed": "4 tests (manifest-driven parametrize、 4 ruff samples)",
+      "ruff_no_violation_in_fixed": "4 tests (ground truth check on fixed/ 配下)",
+      "monoid_hypothesis_unfixed_and_fixed": "2 tests (Falsifying example 発見 + 修正後 property pass)",
+      "tracemalloc_intermediate_observation": "1 test (#6 中間 list allocation 観測)",
+      "manifest_schema_consistency": "1 test (manifest.json 仕様層自体の self-check)"
+    },
+    "phase_1_planned_tests": [
+      "test_af_hook_emits_exit_2_on_violation (Phase 1 hook 実装で GREEN になる red test)",
+      "test_af_hook_provides_structured_feedback (Phase 4 LLM最適化フィードバック整形)",
+      "test_crosshair_with_icontract_detects_violation (Phase 1 contract 設計後)",
+      "test_purity_custom_rule_detects_print (Phase 1 custom rule 実装後)",
+      "test_af_hook_a_b_modification_cycles_reduce (Phase 1 後半 A/B 計測の hook OFF/ON 修正サイクル数比較)"
+    ],
+    "tdd_growth_property": "manifest.json の samples 追加 → pytest parametrize で自動的にテスト増加 (= chai 指示「大量」 の継続的拡張 path)"
+  }
+}
