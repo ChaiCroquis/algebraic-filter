@@ -2,8 +2,11 @@
 
 **AI生成コードに対する代数法則レベルの機械検証ガードレール** — Claude Code skill + PostToolUse hook で AI が書いた Python コードを **書き込み時点で自動検証 → 違反時に自己修正サイクルを起動**。
 
+[English README](README.en.md)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/ChaiCroquis/algebraic-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/ChaiCroquis/algebraic-filter/actions/workflows/ci.yml)
 
 ## 概要
 
