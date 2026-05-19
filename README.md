@@ -154,6 +154,41 @@ python scripts/ab_automation_wide.py
 | 3 データ移動量 | ✓ 拡張完成 | 4 rule AST + tracemalloc + Scalpel Docker bridge |
 | 4 LLM 最適化フィードバック | ✓ minimal prototype | 統一 schema + history + pre-emptive hint |
 
+## ドキュメント索引
+
+### root 配下
+
+| 文書 | 内容 |
+|---|---|
+| [USAGE.md](USAGE.md) | 使い方ガイド (= hook 有効化 / 手動 CLI / Phase 2 API / A/B 計測 の 4 use case) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 貢献ガイド (= 違反 sample 追加 3 step / 法則テンプレ拡張 / Phase 3 静的 rule 追加 / PR submission) |
+| [LICENSE](LICENSE) | MIT License |
+
+### docs/ 配下
+
+| 文書 | 内容 |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | 詳細アーキテクチャ (= 二層構造 / 3 層検証パイプライン / AET-OS Verified Orchestrator Pattern Layer 3 mapping / Phase 0-5 構成) |
+| [docs/evidence_summary.md](docs/evidence_summary.md) | 検証結果集約 (= A/B 計測 +80%/+8.3% / Phase 0 H1-H4 / Phase 2 hypothesis-target 100% / Phase 3 data-movement 100% / Phase 4 統一 schema / end-to-end Claude 自己修正サイクル動作 evidence) |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | 既知の問題 + 対策 (= Windows path mangling / Scalpel typed-ast Python 3.13 build 失敗 / memray Windows 不可 / session reload 不可 / auto-mode classifier nested block) |
+| [docs/algebraic_filter_project_plan.md](docs/algebraic_filter_project_plan.md) | プロジェクト計画書 (= 1〜13 章: 動機 / 問題 / アプローチ / scope / 5 Phase roadmap / 撤退基準 / 成功基準 / 差別化軸) |
+| [docs/algebraic_filter_phase0_pre_reg.md](docs/algebraic_filter_phase0_pre_reg.md) | Phase 0 Pre-registration (= 仮説 H1-H4 / 成功基準 S0-1〜S0-5 / 撤退基準 W0-1〜W0-5 / baseline 計測結果 / ツール調査結果) |
+| [docs/algebraic_filter_related_work.md](docs/algebraic_filter_related_work.md) | 先行研究 + 設計根拠 (= CRANE 2025 constrained decoding 限界 / Mündler PLDI 2025 型制約 / PGS 2025 PBT × LLM / Origami 2024 recursion schemes / Stream Fusion ICFP 2007) |
+| [docs/tool_landscape.md](docs/tool_landscape.md) | ツール選定 + プロジェクト × ツールマトリクス (= AET-OS 3 層に対する 14 ツールの位置づけ) |
+| [docs/_index/aet_os_reference.md](docs/_index/aet_os_reference.md) | AET-OS PDF 索引 + AF 対応 mapping (= Verified Orchestrator Pattern Layer 3 連動表) |
+| [docs/_ab_measurement/protocol.md](docs/_ab_measurement/protocol.md) | A/B 計測 protocol (= chai 別 session 実行手順、 settings rename / hook OFF/ON 切替 / 5 task 投入手順) |
+| [docs/_ab_measurement/log_template.md](docs/_ab_measurement/log_template.md) | A/B 計測 log template (= 各 task の修正サイクル数 / 残違反数 / 副作用記録欄) |
+| [docs/AIエージェントアーキテクチャ調査報告.pdf](docs/AIエージェントアーキテクチャ調査報告.pdf) | AET-OS 構想 PDF (= 5 章構成、 AF が Layer 3 検証実装として整合する設計 reference) |
+
+### samples/violations/ 配下
+
+| 文書 | 内容 |
+|---|---|
+| [samples/violations/README.md](samples/violations/README.md) | 違反サンプル集の構造 + manifest 仕様 + TDD 3 層 articulate |
+| [samples/violations/manifest.json](samples/violations/manifest.json) | 46 sample 仕様層 (= id / file / category / expected_detection / what_to_verify / what_is_the_problem / expected_fix / verification_result の 9 fields × 46 entries + planned_additions_phase_1 + test_coverage) |
+
+---
+
 ## 関連プロジェクト
 
 - **philosophy filter** (= 方針層): 「機械検証可能 → AI実行 / 不可 → 却下」 判断、 AF はこの物理実装アーム
