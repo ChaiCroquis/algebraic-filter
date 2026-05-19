@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/ChaiCroquis/algebraic-filter#documentation-index
+    about: Read README / USAGE / architecture / evidence_summary / troubleshooting first
+  - name: 💬 Discussion
+    url: https://github.com/ChaiCroquis/algebraic-filter/discussions
+    about: General questions or design discussions (if Discussions is enabled)
