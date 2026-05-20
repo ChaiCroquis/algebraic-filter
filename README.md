@@ -10,7 +10,7 @@
 
 ## Overview
 
-AI-generated code contains a large amount of algebraic structural defects (purity violations, broken associativity, excessive data movement, etc.) that are invisible to `pass@1` evaluation. algebraic-filter (AF) post-validates `Write`/`Edit` via Claude Code's **PostToolUse hook** and, on violation, returns `exit code 2 + structured feedback` to trigger Claude's **self-correction cycle**.
+AI-generated code can contain algebraic structural defects (purity violations, broken associativity, excessive data movement, etc.) that are invisible to `pass@1` evaluation. algebraic-filter (AF) post-validates `Write`/`Edit` via Claude Code's **PostToolUse hook** and, on violation, returns `exit code 2 + structured feedback` to trigger Claude's **self-correction cycle**.
 
 ### Design philosophy
 
@@ -32,7 +32,7 @@ Layer 3 data movement (tens of seconds): tracemalloc / memray + threshold judgme
 violation detected → exit code 2 + structured feedback → Claude self-corrects
 ```
 
-## Action evidence (Phase 1 withdrawal-criterion cleared)
+## Action evidence (small-scale, reproduce-it-yourself)
 
 A/B measurement automated via `claude --print` nested sessions:
 
@@ -41,7 +41,14 @@ A/B measurement automated via `claude --print` nested sessions:
 | **AI-generated raw code** (no type annotations, 5 samples) | 20% | 100% | **+80%** |
 | **Curated code** (typed, 12 samples) | 91.7% | 100% | +8.3% |
 
-Both niches clear Phase 1 withdrawal criterion (`pass@1 +5%`) = AF effectiveness substantiated.
+> **Read this before quoting the numbers.** These are **small-n (5 and 12),
+> single-run measurements on AF's own violation samples**, on one model. They
+> clear the Phase 1 withdrawal criterion (`pass@1 +5%`) **on this corpus** —
+> they are **not a general performance guarantee**. The headline +80% is the
+> raw-code niche where the floor is low (20% → 100%); the curated-code delta
+> (+8.3%) is more representative of well-typed codebases. **Your results will
+> vary** with corpus, model, and prompt. Reproduce in your own context with
+> `python scripts/ab_automation.py` rather than taking these as fixed.
 
 ## Is this the right tool for you? (applicability matrix)
 
@@ -173,6 +180,13 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 - `inferrer.py` — Function signature → law ID inference (12 keywords + type-strategy auto-selection)
 - `law_templates.py` — 13 law templates (Monoid / Functor / Foldable / Monad / Semigroup / Eq / Commutativity / Idempotence)
 - `generator.py` — `auto_test()` / `auto_test_monad_pair()` / `auto_test_class_idempotence()` APIs
+
+> **Scope of "auto-generation"**: law inference is a **keyword + type heuristic**,
+> not a general prover. It fires only when a function's name/signature matches a
+> known pattern (e.g. `sum`/`merge`/`concat` → Monoid; `fmap`/`map` → Functor).
+> On AF's own 46-sample corpus it activates on ~15 (the algebraically-shaped
+> ones); on arbitrary code it may not fire at all. monad-pair laws need the
+> explicit `auto_test_monad_pair()` API (not auto-wired into the hook runner).
 
 ### Phase 3: Data-movement feedback ([af_phase3/](af_phase3/))
 - `static_checker.py` — AST visitor with AF-original 4 rules (intermediate-list-chain / dict-keys-list / explicit-copy / string-concat-in-loop)

@@ -48,7 +48,7 @@ The single failure (b007_unused_loop_variable hook OFF) is the same pattern as t
 |---|---|---|---|
 | pass@1 +5% improvement | +80% | +8.3% | **Cleared in both niches** |
 | Edit cycles -10% improvement | +80% increase | +8% increase | Not met (trade-off invested in completion-depth) |
-| Both unmet → withdrawal (AND) | pass@1 cleared | pass@1 cleared | **Withdrawal criterion not met = AF effectiveness substantiated** |
+| Both unmet → withdrawal (AND) | pass@1 cleared | pass@1 cleared | **Withdrawal criterion not met on this corpus** (small n, single run, AF's own samples — not a general guarantee) |
 
 ### 1-5. Niche-difference articulation
 
