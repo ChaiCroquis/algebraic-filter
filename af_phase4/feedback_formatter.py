@@ -1,16 +1,64 @@
 """Phase 4: 構造化 LLM フィードバック整形.
 
-input: ruff raw output (Phase 1) + Phase 3 StaticViolation list
+input: ruff raw output (Phase 1) + Phase 3 StaticViolation list (+ optional Phase 2)
 output: 統一 schema の構造化 dict list
   {violation_location, violation_law, alternative_skeleton, fix_example, layer}
 
-Phase 1 (ruff) と Phase 3 (AST) の異なる layer の violation を同 schema に揃え、
-hook の additionalContext で Claude に投げる payload を一元化する.
+Phase 1 (ruff) + Phase 2 (代数法則) + Phase 3 (AST) の異なる layer の violation を
+同 schema に揃え、 hook の additionalContext で Claude に投げる payload を一元化する.
+
+Phase 4 拡張: feedback shape variant
+  env var AF_FEEDBACK_SHAPE で shape A/B 切替可能 (default = "verbose"):
+    - "verbose": v0.1.0 標準 shape (= skeleton + fix_example + violation_message 全載)
+    - "minimal": law_id + location のみ (= short prompt、 token 節約 path)
+    - "skeleton_only": skeleton 添えるが fix_example は省略 (= 中間 shape)
+  shape A/B 計測時に env var 切替で同一 sample に対する異なる shape を投入し、
+  pass@1 / 修正 cycle 数を比較する infra (= shape 最適化の運用 path).
 """
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
+
+
+FEEDBACK_SHAPE_ENV = "AF_FEEDBACK_SHAPE"
+SHAPE_VERBOSE = "verbose"
+SHAPE_MINIMAL = "minimal"
+SHAPE_SKELETON_ONLY = "skeleton_only"
+VALID_SHAPES = (SHAPE_VERBOSE, SHAPE_MINIMAL, SHAPE_SKELETON_ONLY)
+
+
+def get_active_shape() -> str:
+    """env var で指定された shape を返す、 不正値 / 未指定は verbose."""
+    val = os.environ.get(FEEDBACK_SHAPE_ENV, "").strip().lower()
+    if val in VALID_SHAPES:
+        return val
+    return SHAPE_VERBOSE
+
+
+def shape_violation_for_output(violation: dict[str, Any], shape: str | None = None) -> list[str]:
+    """1 件の structured violation を shape に応じた markdown 行 list に変換.
+
+    hook の出力整形で使用 (= 1 violation あたりの行数 / 詳細度を shape で制御).
+    """
+    if shape is None:
+        shape = get_active_shape()
+
+    head = (
+        f"- **{violation['violation_law']}** ({violation['layer']}) "
+        f"at `{violation['violation_location']}`"
+    )
+    if shape == SHAPE_MINIMAL:
+        return [head]
+    if shape == SHAPE_SKELETON_ONLY:
+        return [head, f"  - skeleton: {violation['alternative_skeleton']}"]
+    # SHAPE_VERBOSE = default
+    return [
+        head,
+        f"  - skeleton: {violation['alternative_skeleton']}",
+        f"  - fix example: `{violation['fix_example']}`",
+    ]
 
 
 _RUFF_SKELETON: dict[str, str] = {

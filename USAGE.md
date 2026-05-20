@@ -73,6 +73,31 @@ Expected behavior:
 4. Claude calls Edit again → hook fires again → remaining violations (ANN001/ANN201) detected → another feedback
 5. Claude adds type annotations → hook passes (exit 0)
 
+### 1-4. Optional hook behavior via environment variables
+
+The hook supports two opt-in environment variables for advanced behavior:
+
+| Env var | Default | Effect |
+|---|---|---|
+| `AF_HOOK_PHASE2_PBT` | OFF | When set to `1` / `true` / `on`, the hook runs Phase 2 algebraic-law PBT (hypothesis) against functions in the written file and routes any law failures into the unified Phase 4 feedback. **Cost**: adds ~1-3 s/write (hypothesis runtime) and imports the target module (side-effect risk). Recommended only for throwaway dirs (`scratch/`, `samples/`), not production code. |
+| `AF_FEEDBACK_SHAPE` | `verbose` | Selects feedback verbosity for A/B shape experiments: `verbose` (skeleton + fix example), `skeleton_only` (skeleton, no fix example), `minimal` (law_id + location only, token-saving). Invalid values fall back to `verbose`. |
+
+Example (PowerShell):
+
+```powershell
+$env:AF_HOOK_PHASE2_PBT = "1"
+$env:AF_FEEDBACK_SHAPE = "minimal"
+claude
+```
+
+Example (bash):
+
+```bash
+AF_HOOK_PHASE2_PBT=1 AF_FEEDBACK_SHAPE=minimal claude
+```
+
+These are designed for the **feedback-shape A/B measurement** path: run the same violation samples under different `AF_FEEDBACK_SHAPE` values and compare pass@1 / correction-cycle counts.
+
 ---
 
 ## 2. Manual violation detection via CLI

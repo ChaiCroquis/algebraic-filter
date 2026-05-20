@@ -17,6 +17,7 @@ Claude Code が Write / Edit / MultiEdit で .py file を更新した直後に�
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 import sys
@@ -37,11 +38,24 @@ try:
         get_preemptive_hints as _phase4_get_hints,
         record_violations as _phase4_record,
     )
-    from af_phase4.feedback_formatter import combine_violations as _phase4_combine
+    from af_phase4.feedback_formatter import (  # type: ignore
+        combine_violations as _phase4_combine,
+        shape_violation_for_output as _phase4_shape,
+    )
 except Exception:
     _phase4_get_hints = None  # type: ignore
     _phase4_record = None  # type: ignore
     _phase4_combine = None  # type: ignore
+    _phase4_shape = None  # type: ignore
+
+try:
+    from af_phase4.phase2_runner import (  # type: ignore
+        collect_phase2_failures as _phase2_collect,
+        is_enabled as _phase2_enabled,
+    )
+except Exception:
+    _phase2_collect = None  # type: ignore
+    _phase2_enabled = None  # type: ignore
 
 
 SELECT_RULES = "PERF,SIM,FURB,ANN,F"
@@ -75,7 +89,24 @@ def _run_phase3(file_path: str) -> list:
         return []
 
 
-def _format_feedback(file_path: str, ruff_output: str, phase3_violations: list) -> dict:
+def _run_phase2(file_path: str) -> list:
+    """Phase 2 PBT runner (opt-in via env var AF_HOOK_PHASE2_PBT)."""
+    if _phase2_collect is None or _phase2_enabled is None:
+        return []
+    if not _phase2_enabled():
+        return []
+    try:
+        return _phase2_collect(file_path)
+    except Exception:
+        return []
+
+
+def _format_feedback(
+    file_path: str,
+    ruff_output: str,
+    phase3_violations: list,
+    phase2_failures: list | None = None,
+) -> dict:
     parts = [
         "## AF hook (algebraic-filter) detected violations",
         "",
@@ -88,7 +119,9 @@ def _format_feedback(file_path: str, ruff_output: str, phase3_violations: list) 
     rule_ids: list[str] = []
     if _phase4_combine is not None:
         try:
-            structured = _phase4_combine(ruff_output, phase3_violations, file_path)
+            structured = _phase4_combine(
+                ruff_output, phase3_violations, file_path, phase2_failures
+            )
             rule_ids = [v["violation_law"] for v in structured]
         except Exception:
             structured = []
@@ -97,20 +130,21 @@ def _format_feedback(file_path: str, ruff_output: str, phase3_violations: list) 
     if structured:
         parts.extend(["### Phase 4 — structured violations (layer-unified)", ""])
         for v in structured[:10]:
-            parts.append(
-                f"- **{v['violation_law']}** ({v['layer']}) at `{v['violation_location']}`"
-            )
-            parts.append(f"  - skeleton: {v['alternative_skeleton']}")
-            parts.append(f"  - fix example: `{v['fix_example']}`")
+            if _phase4_shape is not None:
+                parts.extend(_phase4_shape(v))
+            else:
+                parts.append(
+                    f"- **{v['violation_law']}** ({v['layer']}) at `{v['violation_location']}`"
+                )
+                parts.append(f"  - skeleton: {v['alternative_skeleton']}")
+                parts.append(f"  - fix example: `{v['fix_example']}`")
         parts.append("")
 
     # Phase 4 anti-pattern tracker: 違反を history に記録 + pre-emptive hint 取得
     hints: list[str] = []
     if _phase4_record is not None and rule_ids:
-        try:
+        with contextlib.suppress(Exception):
             _phase4_record(rule_ids, file_path)
-        except Exception:
-            pass
     if _phase4_get_hints is not None and rule_ids:
         try:
             hints = _phase4_get_hints(rule_ids)
@@ -119,8 +153,7 @@ def _format_feedback(file_path: str, ruff_output: str, phase3_violations: list) 
 
     if hints:
         parts.extend(["### Phase 4 — pre-emptive hints (repeated violation alert)", ""])
-        for h in hints:
-            parts.append(f"- {h}")
+        parts.extend(f"- {h}" for h in hints)
         parts.append("")
 
     # 旧 Phase 1 raw output + Phase 3 list は補助として残置 (互換性)
@@ -135,8 +168,10 @@ def _format_feedback(file_path: str, ruff_output: str, phase3_violations: list) 
         ])
     if phase3_violations:
         parts.extend(["### Phase 3 raw (AST violations)", ""])
-        for v in phase3_violations[:10]:
-            parts.append(f"- `{v.rule_id}` (line {v.line}): {v.message}")
+        parts.extend(
+            f"- `{v.rule_id}` (line {v.line}): {v.message}"
+            for v in phase3_violations[:10]
+        )
         parts.append("")
 
     parts.extend([
@@ -165,17 +200,24 @@ def main() -> int:
 
     ruff_rc, ruff_output = _run_ruff(file_path)
     phase3_violations = _run_phase3(file_path)
+    phase2_failures = _run_phase2(file_path)
 
     has_phase1_violation = ruff_rc != 0
     has_phase3_violation = bool(phase3_violations)
+    has_phase2_violation = bool(phase2_failures)
 
-    if not has_phase1_violation and not has_phase3_violation:
+    if (
+        not has_phase1_violation
+        and not has_phase3_violation
+        and not has_phase2_violation
+    ):
         return 0
 
     feedback = _format_feedback(
         file_path,
         ruff_output if has_phase1_violation else "",
         phase3_violations,
+        phase2_failures if has_phase2_violation else None,
     )
     print(json.dumps(feedback, ensure_ascii=False), file=sys.stdout)
     return 2

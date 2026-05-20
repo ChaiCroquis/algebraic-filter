@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -19,10 +20,15 @@ from af_phase4.anti_pattern_tracker import (  # noqa: E402
     record_violations,
 )
 from af_phase4.feedback_formatter import (  # noqa: E402
+    SHAPE_MINIMAL,
+    SHAPE_SKELETON_ONLY,
+    SHAPE_VERBOSE,
     combine_violations,
     format_phase2_violations,
     format_phase3_violations,
     format_ruff_violations,
+    get_active_shape,
+    shape_violation_for_output,
 )
 
 HOOK_SCRIPT = REPO_ROOT / "hooks" / "posttool_af_check.py"
@@ -182,6 +188,64 @@ def test_phase4_per_rule_threshold_default_light_violation() -> None:
         hints_3 = get_preemptive_hints(["PERF401"], history_path=hist)
         assert hints_3, "PERF401 は 3 回で default threshold=3 により hint 出るはず"
         assert "threshold=3" in hints_3[0]
+
+
+_SAMPLE_VIOLATION_DICT = {
+    "layer": "Phase 1 ruff",
+    "violation_location": "foo.py:15",
+    "violation_law": "PERF401",
+    "violation_message": "Use a list comprehension",
+    "alternative_skeleton": "list comprehension",
+    "fix_example": "[x * 2 for x in data if x > 0]",
+}
+
+
+def test_phase4_shape_verbose_emits_skeleton_and_fix() -> None:
+    """verbose shape (= default) は skeleton + fix example 両方を出力 (3 行)"""
+    lines = shape_violation_for_output(_SAMPLE_VIOLATION_DICT, shape=SHAPE_VERBOSE)
+    assert len(lines) == 3
+    joined = "\n".join(lines)
+    assert "PERF401" in joined
+    assert "skeleton:" in joined
+    assert "fix example:" in joined
+
+
+def test_phase4_shape_minimal_emits_head_only() -> None:
+    """minimal shape は law_id + location の 1 行のみ (= token 節約)"""
+    lines = shape_violation_for_output(_SAMPLE_VIOLATION_DICT, shape=SHAPE_MINIMAL)
+    assert len(lines) == 1
+    assert "PERF401" in lines[0]
+    assert "foo.py:15" in lines[0]
+    assert "skeleton:" not in lines[0]
+    assert "fix example:" not in lines[0]
+
+
+def test_phase4_shape_skeleton_only_omits_fix() -> None:
+    """skeleton_only shape は skeleton 添えるが fix example は省略 (2 行)"""
+    lines = shape_violation_for_output(_SAMPLE_VIOLATION_DICT, shape=SHAPE_SKELETON_ONLY)
+    assert len(lines) == 2
+    joined = "\n".join(lines)
+    assert "skeleton:" in joined
+    assert "fix example:" not in joined
+
+
+def test_phase4_get_active_shape_env_switch() -> None:
+    """env var AF_FEEDBACK_SHAPE で active shape が切り替わる、 不正値は verbose fallback"""
+    saved = os.environ.get("AF_FEEDBACK_SHAPE")
+    try:
+        os.environ["AF_FEEDBACK_SHAPE"] = "minimal"
+        assert get_active_shape() == SHAPE_MINIMAL
+        os.environ["AF_FEEDBACK_SHAPE"] = "skeleton_only"
+        assert get_active_shape() == SHAPE_SKELETON_ONLY
+        os.environ["AF_FEEDBACK_SHAPE"] = "bogus_value"
+        assert get_active_shape() == SHAPE_VERBOSE  # 不正値は verbose
+        os.environ.pop("AF_FEEDBACK_SHAPE", None)
+        assert get_active_shape() == SHAPE_VERBOSE  # 未設定は verbose
+    finally:
+        if saved is None:
+            os.environ.pop("AF_FEEDBACK_SHAPE", None)
+        else:
+            os.environ["AF_FEEDBACK_SHAPE"] = saved
 
 
 def test_phase4_hook_emits_structured_feedback() -> None:

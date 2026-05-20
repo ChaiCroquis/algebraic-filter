@@ -71,6 +71,31 @@ def double_positives(data):
 4. Claude が Edit で再度 hook 起動 → 残違反 (= ANN001/ANN201 等) 検出 → 再 feedback
 5. Claude が型注釈追加 → hook PASS (exit 0)
 
+### 1-4. 環境変数による optional hook 動作
+
+hook は 2 つの opt-in 環境変数で高度動作を制御できる:
+
+| 環境変数 | 既定 | 効果 |
+|---|---|---|
+| `AF_HOOK_PHASE2_PBT` | OFF | `1` / `true` / `on` 設定時、 hook が書き込み file 内の関数に Phase 2 代数法則 PBT (hypothesis) を走らせ、 法則違反を Phase 4 統一 feedback に統合。 **cost**: 書き込みあたり ~1-3 秒増 (hypothesis 実行) + target module を import (= side-effect risk)。 書き捨て領域 (`scratch/`, `samples/`) 限定推奨、 production code 非推奨。 |
+| `AF_FEEDBACK_SHAPE` | `verbose` | feedback 詳細度を A/B shape 実験用に選択: `verbose` (skeleton + fix example)、 `skeleton_only` (skeleton のみ、 fix example 省略)、 `minimal` (law_id + location のみ、 token 節約)。 不正値は `verbose` fallback。 |
+
+例 (PowerShell):
+
+```powershell
+$env:AF_HOOK_PHASE2_PBT = "1"
+$env:AF_FEEDBACK_SHAPE = "minimal"
+claude
+```
+
+例 (bash):
+
+```bash
+AF_HOOK_PHASE2_PBT=1 AF_FEEDBACK_SHAPE=minimal claude
+```
+
+これらは **feedback shape A/B 計測** path 用: 同一 violation sample を異なる `AF_FEEDBACK_SHAPE` 値で走らせ、 pass@1 / 修正サイクル数を比較する。
+
 ---
 
 ## 2. 手動で violation 検出 (CLI)
