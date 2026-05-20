@@ -17,7 +17,6 @@ Phase 4 拡張: feedback shape variant
 """
 from __future__ import annotations
 
-import os
 import re
 from typing import Any
 
@@ -30,11 +29,14 @@ VALID_SHAPES = (SHAPE_VERBOSE, SHAPE_MINIMAL, SHAPE_SKELETON_ONLY)
 
 
 def get_active_shape() -> str:
-    """env var で指定された shape を返す、 不正値 / 未指定は verbose."""
-    val = os.environ.get(FEEDBACK_SHAPE_ENV, "").strip().lower()
-    if val in VALID_SHAPES:
-        return val
-    return SHAPE_VERBOSE
+    """feedback shape を返す.
+
+    解決順序: env var AF_FEEDBACK_SHAPE > 設定ファイル `feedback_shape` >
+    安全 default (= verbose)。 不正値は verbose fallback。
+    """
+    from af_phase4.config import resolve_str
+
+    return resolve_str("feedback_shape", FEEDBACK_SHAPE_ENV, VALID_SHAPES)
 
 
 def shape_violation_for_output(violation: dict[str, Any], shape: str | None = None) -> list[str]:

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
-import os
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -36,9 +35,14 @@ def _get_function_line(func: Callable[..., Any]) -> int:
 
 
 def is_enabled() -> bool:
-    """env var で opt-in 有効化されているか判定 (= '1' / 'true' / 'on' で有効)."""
-    val = os.environ.get(ENV_GATE, "").strip().lower()
-    return val in ("1", "true", "on", "yes")
+    """Phase 2 runtime が有効か判定.
+
+    解決順序: env var AF_HOOK_PHASE2_PBT > 設定ファイル `phase2_runtime` >
+    安全 default (= False)。 詳細は af_phase4.config を参照。
+    """
+    from af_phase4.config import resolve_bool
+
+    return resolve_bool("phase2_runtime", ENV_GATE)
 
 
 def collect_phase2_failures(file_path: str) -> list[dict[str, Any]]:

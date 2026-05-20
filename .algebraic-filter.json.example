@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy to .algebraic-filter.json in your project root to override AF defaults. All values shown are the SAFE DEFAULTS (risky/heavy behavior OFF). Precedence: environment variable > this file > built-in safe default.",
+
+  "phase2_runtime": false,
+
+  "_phase2_runtime_doc": "When true, the hook IMPORTS AND EXECUTES the written .py module to run algebraic-law property tests (hypothesis). This runs your code at write-time (side-effect risk) and adds ~1-3s. Enable ONLY in trusted / throwaway dirs (scratch/, samples/). Env override: AF_HOOK_PHASE2_PBT=1. Default: false (safe).",
+
+  "feedback_shape": "verbose",
+
+  "_feedback_shape_doc": "Feedback verbosity: 'verbose' (skeleton + fix example), 'skeleton_only' (skeleton, no fix), 'minimal' (law_id + location only). Env override: AF_FEEDBACK_SHAPE. Default: verbose."
+}
