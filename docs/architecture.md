@@ -141,7 +141,7 @@ CrossHair + QWED, recommended in AET-OS PDF §4.2, are the Python formal-verific
 | 1 PostToolUse hook | Hook script + 46 violation samples + manifest-driven TDD | [hooks/posttool_af_check.py](../hooks/posttool_af_check.py) + [samples/violations/](../samples/violations/) | ✓ end-to-end verified |
 | 2 Algebraic-law PBT auto-gen | inferrer + law_templates + generator | [af_phase2/](../af_phase2/) | ✓ 13 laws + 100% subset coverage |
 | 3 Data movement | static_checker + runtime_checker + Scalpel Docker | [af_phase3/](../af_phase3/) + [af_phase3_scalpel/](../af_phase3_scalpel/) | ✓ extended |
-| 4 LLM-optimized feedback | feedback_formatter + anti_pattern_tracker | [af_phase4/](../af_phase4/) | ✓ minimal prototype |
+| 4 LLM-optimized feedback | feedback_formatter (Phase 1+2+3 unified schema) + anti_pattern_tracker (per-rule threshold) | [af_phase4/](../af_phase4/) | ✓ integrated + A/B verified |
 | 5 OSS release | README + LICENSE + pyproject + GitHub push | This repository | ✓ initial push |
 
 ### Phase 0 binding contract achievement

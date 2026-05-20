@@ -168,7 +168,7 @@ python scripts/ab_automation_wide.py
 | 1 PostToolUse hook | ✓ end-to-end 動作確認済 | 46 sample + 5 hook test + 4 A/B test |
 | 2 代数法則 PBT 自動生成 | ✓ 深掘り完成 | 13 法則 + hypothesis-target subset 100% coverage |
 | 3 データ移動量 | ✓ 拡張完成 | 4 rule AST + tracemalloc + Scalpel Docker bridge |
-| 4 LLM 最適化フィードバック | ✓ minimal prototype | 統一 schema + history + pre-emptive hint |
+| 4 LLM 最適化フィードバック | ✓ integrated + A/B verified | 統一 schema (Phase 1+2+3) + history + per-rule threshold + pre-emptive hint |
 
 ## ドキュメント索引
 

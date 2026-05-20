@@ -168,7 +168,7 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 | 1 PostToolUse hook | ✓ end-to-end verified | 46 samples + 5 hook tests + 4 A/B tests |
 | 2 Algebraic-law PBT auto-generation | ✓ deepened | 13 laws + 100% hypothesis-target subset coverage |
 | 3 Data movement | ✓ extended | 4 AST rules + tracemalloc + Scalpel Docker bridge |
-| 4 LLM-optimized feedback | ✓ minimal prototype | Unified schema + history + pre-emptive hint |
+| 4 LLM-optimized feedback | ✓ integrated + A/B verified | Unified schema (Phase 1+2+3) + history + per-rule threshold + pre-emptive hint |
 | 5 OSS release | ✓ initial push | GitHub public repo + v0.1.0 release |
 
 ## Documentation index

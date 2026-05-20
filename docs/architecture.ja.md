@@ -136,7 +136,7 @@ AET-OS PDF §4.2 で推奨される CrossHair + QWED は Python 形式検証の 
 | 1 PostToolUse hook | hook script + 違反 sample 46 件 + manifest 駆動 TDD | [hooks/posttool_af_check.py](../hooks/posttool_af_check.py) + [samples/violations/](../samples/violations/) | ✓ end-to-end 動作確認 |
 | 2 代数法則 PBT 自動生成 | inferrer + law_templates + generator | [af_phase2/](../af_phase2/) | ✓ 13 法則 + 100% subset coverage |
 | 3 データ移動量 | static_checker + runtime_checker + Scalpel Docker | [af_phase3/](../af_phase3/) + [af_phase3_scalpel/](../af_phase3_scalpel/) | ✓ 拡張完成 |
-| 4 LLM 最適化フィードバック | feedback_formatter + anti_pattern_tracker | [af_phase4/](../af_phase4/) | ✓ minimal prototype |
+| 4 LLM 最適化フィードバック | feedback_formatter (Phase 1+2+3 統合 schema) + anti_pattern_tracker (per-rule threshold) | [af_phase4/](../af_phase4/) | ✓ integrated + A/B verified |
 | 5 OSS 公開 | README + LICENSE + pyproject + GitHub push | この repository | ✓ initial push |
 
 ### Phase 0 binding 契約 達成
