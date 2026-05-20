@@ -252,6 +252,7 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 | File | Content |
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | Detailed architecture (two-layer / 3-layer pipeline / AET-OS Layer 3 mapping / Phase 0-5 composition) |
+| [docs/hybrid_setup.md](docs/hybrid_setup.md) | Hybrid setup guide — run a base quality tool (claude-code-quality-hook / pyright) + AF as +α, with verified composition |
 | [docs/evidence_summary.md](docs/evidence_summary.md) | Evidence summary (A/B +80%/+8.3% / Phase 0 H1-H4 / Phase 2 100% subset / Phase 3 100% subset / end-to-end Claude self-correction) |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Known issues + countermeasures (Windows path mangling / Scalpel typed-ast / memray Windows / session reload / auto-mode classifier) |
 
