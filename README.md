@@ -107,6 +107,21 @@ Either way the PostToolUse hook registers automatically via
 other plugins (additive composition — verified end-to-end, see
 [docs/evidence_summary.md](docs/evidence_summary.md) §8).
 
+> **Install scope — important.** `claude plugin install` defaults to
+> `--scope user`, which means the hook fires in **every project** you open
+> (it's a fast no-op on non-`.py` files and clean code, but the `ruff`
+> subprocess still launches on each `.py` write everywhere). To limit it:
+>
+> | `--scope` | Fires in | Use when |
+> |---|---|---|
+> | `user` (default) | **all your projects** | you always want AF on |
+> | `project` | one repo, committed (shared with the team) | team-wide on that repo |
+> | `local` | one repo, just you (not committed) | your own work on that repo |
+>
+> Since AF is most useful on Python with algebraic structure, **`--scope local`
+> on the target project** is the safe default:
+> `claude plugin install algebraic-filter@algebraic-filter-marketplace --scope local`
+
 The plugin registers its PostToolUse hook automatically via
 `${CLAUDE_PLUGIN_ROOT}`; it runs **in addition to** your existing hooks and any
 other plugins (additive composition — see [docs/architecture.md](docs/architecture.md)).

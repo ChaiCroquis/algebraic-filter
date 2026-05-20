@@ -105,6 +105,20 @@ claude --plugin-dir /absolute/path/to/algebraic-filter
 hook や他 plugin と **合成して** 走る (= additive composition、 end-to-end 検証済、
 [docs/evidence_summary.ja.md](docs/evidence_summary.ja.md) §8 参照)。
 
+> **install scope — 重要。** `claude plugin install` の既定は `--scope user` で、
+> この場合 hook は **全プロジェクト** で発火する (= 非 `.py` や clean コードでは即
+> no-op だが、 `ruff` subprocess はどの project の `.py` 書込でも起動する)。 限定するには:
+>
+> | `--scope` | 発火範囲 | 用途 |
+> |---|---|---|
+> | `user` (= 既定) | **自分の全プロジェクト** | 常に AF を効かせたい |
+> | `project` | その repo のみ、 commit 共有 | チームでその repo に効かせたい |
+> | `local` | その repo + 自分だけ、 非 commit | 自分のその repo 作業だけ |
+>
+> AF が活きるのは代数構造を持つ Python なので、 **対象 project で `--scope local`**
+> が無難な既定:
+> `claude plugin install algebraic-filter@algebraic-filter-marketplace --scope local`
+
 > **前提**: hook は `ruff` (Phase 2 で `hypothesis`、 型検査 base に `pyright`)
 > を呼ぶ。 使うものを install: `pip install ruff hypothesis`。
 
