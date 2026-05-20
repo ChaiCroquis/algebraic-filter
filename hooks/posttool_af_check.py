@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -73,9 +75,26 @@ def _read_event() -> dict:
         return {}
 
 
+def _ruff_command() -> list[str]:
+    """ruff 起動 command を返す.
+
+    standalone `ruff` binary を優先 (= 実測で `python -m ruff` の ~1/4 latency:
+    16ms vs 61ms、 Python wrapper の二重起動を回避)。 binary 不在時は
+    `python -m ruff` に fallback (= 後方互換、 ruff が editable install のみの環境)。
+    AF_RUFF_BIN env で明示 override も可。
+    """
+    override = os.environ.get("AF_RUFF_BIN", "").strip()
+    if override:
+        return [override]
+    found = shutil.which("ruff")
+    if found:
+        return [found]
+    return [sys.executable, "-m", "ruff"]
+
+
 def _run_ruff(file_path: str) -> tuple[int, str]:
     result = subprocess.run(
-        ["python", "-m", "ruff", "check", f"--select={SELECT_RULES}", file_path],
+        [*_ruff_command(), "check", f"--select={SELECT_RULES}", file_path],
         capture_output=True,
         text=True,
         encoding="utf-8",
