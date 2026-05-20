@@ -9,11 +9,42 @@ articulate して、 threshold (default 3) 超過時に pre-emptive hint message
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
 _HOOK_DIR = Path(__file__).resolve().parent.parent / "hooks"
-DEFAULT_HISTORY_PATH = _HOOK_DIR / "af_violation_history.json"
+
+
+def _resolve_default_history_path() -> Path:
+    """History file path, writable in both standalone and plugin installs.
+
+    Resolution order:
+      1. AF_HISTORY_PATH env override (explicit user control).
+      2. hooks/af_violation_history.json IF that dir is writable
+         (= standalone repo / editable install — legacy behavior preserved).
+      3. <cwd>/.claude/af_violation_history.json (project-local, writable) —
+         used when the install dir is read-only (= plugin install under
+         ${CLAUDE_PLUGIN_ROOT}).
+      4. <tempdir>/af_violation_history.json — last-resort fallback.
+    """
+    env = os.environ.get("AF_HISTORY_PATH", "").strip()
+    if env:
+        return Path(env)
+    if os.access(_HOOK_DIR, os.W_OK):
+        return _HOOK_DIR / "af_violation_history.json"
+    cwd_claude = Path.cwd() / ".claude"
+    try:
+        cwd_claude.mkdir(parents=True, exist_ok=True)
+        if os.access(cwd_claude, os.W_OK):
+            return cwd_claude / "af_violation_history.json"
+    except OSError:
+        pass
+    return Path(tempfile.gettempdir()) / "af_violation_history.json"
+
+
+DEFAULT_HISTORY_PATH = _resolve_default_history_path()
 PREEMPTIVE_HINT_THRESHOLD = 3
 MAX_HISTORY_ENTRIES = 1000
 

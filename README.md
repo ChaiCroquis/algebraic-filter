@@ -71,7 +71,34 @@ pip install -e ".[phase4]"
 pip install -e ".[dev]"
 ```
 
-### Claude Code hook registration
+### Activation — two tracks (both supported)
+
+AF works as an **additive +α layer**: it composes on top of whatever base
+quality tooling you already run (ruff / pyright / another hook), each hook
+firing independently on the same edit. Choose either track:
+
+#### Track A — Claude Code plugin (recommended, no manual wiring)
+
+AF ships as a Claude Code plugin (`.claude-plugin/plugin.json` + `hooks/hooks.json`).
+Load it as an add-on:
+
+```bash
+# Local / development
+claude --plugin-dir /absolute/path/to/algebraic-filter
+
+# Or install from a marketplace (once published):
+# /plugin install algebraic-filter@<marketplace>
+```
+
+The plugin registers its PostToolUse hook automatically via
+`${CLAUDE_PLUGIN_ROOT}`; it runs **in addition to** your existing hooks and any
+other plugins (additive composition — see [docs/architecture.md](docs/architecture.md)).
+
+> **Prerequisite**: the hook shells out to `ruff` (and optionally `hypothesis`
+> for Phase 2, `pyright` for a type-check base). Install what you use:
+> `pip install ruff hypothesis`.
+
+#### Track B — standalone hook (manual wiring)
 
 Create `.claude/settings.local.json` in your project:
 

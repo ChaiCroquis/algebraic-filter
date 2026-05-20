@@ -1,0 +1,19 @@
+{
+  "name": "algebraic-filter",
+  "version": "0.1.0",
+  "description": "Algebraic-law-level machine verification guardrail for AI-generated Python code. An additive +α PostToolUse hook: detects algebraic-law violations (Monoid/Functor/Monad/etc.) + data-movement defects that lint/type-checkers miss, and feeds structured feedback back to Claude for self-correction. Composes on top of any base quality tooling (ruff/pyright/etc.).",
+  "author": {
+    "name": "ChaiCroquis"
+  },
+  "homepage": "https://github.com/ChaiCroquis/algebraic-filter",
+  "repository": "https://github.com/ChaiCroquis/algebraic-filter",
+  "license": "MIT",
+  "keywords": [
+    "hook",
+    "post-tool-use",
+    "code-quality",
+    "property-based-testing",
+    "algebraic-laws",
+    "python"
+  ]
+}

@@ -71,7 +71,31 @@ pip install -e ".[phase4]"
 pip install -e ".[dev]"
 ```
 
-### Claude Code hook 登録
+### 有効化 — 2 トラック (両対応)
+
+AF は **additive な +α layer** として動作する: 既に走らせている任意の base
+品質ツール (ruff / pyright / 他の hook) の上に乗り、 各 hook が同一 edit で独立に
+発火する。 どちらのトラックでも導入可:
+
+#### トラック A — Claude Code plugin (推奨、 手動配線不要)
+
+AF は Claude Code plugin として同梱 (`.claude-plugin/plugin.json` + `hooks/hooks.json`)。 add-on として load:
+
+```bash
+# ローカル / 開発
+claude --plugin-dir /absolute/path/to/algebraic-filter
+
+# または marketplace から install (公開後):
+# /plugin install algebraic-filter@<marketplace>
+```
+
+plugin は `${CLAUDE_PLUGIN_ROOT}` 経由で PostToolUse hook を自動登録し、 既存の
+hook や他 plugin と **合成して** 走る (= additive composition、 [docs/architecture.ja.md](docs/architecture.ja.md) 参照)。
+
+> **前提**: hook は `ruff` (Phase 2 で `hypothesis`、 型検査 base に `pyright`)
+> を呼ぶ。 使うものを install: `pip install ruff hypothesis`。
+
+#### トラック B — standalone hook (手動配線)
 
 `.claude/settings.local.json` を AF プロジェクトに作成:
 
