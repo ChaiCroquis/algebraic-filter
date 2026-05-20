@@ -207,7 +207,7 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 |---|---|---|
 | 0 Pre-reg + baseline | ✓ closed (2026-05-19) | H1-H4 / S0-1〜S0-5 all met, LayerForge baseline confirmed |
 | 1 PostToolUse hook | ✓ end-to-end verified | 46 samples + 5 hook tests + 4 A/B tests |
-| 2 Algebraic-law PBT auto-generation | ✓ deepened | 13 laws + 100% hypothesis-target subset coverage |
+| 2 Algebraic-law PBT auto-generation | ✓ deepened | 13 laws; 100% on the hypothesis-target subset, ~21.7% across the full 46-sample corpus (specialized niche) |
 | 3 Data movement | ✓ extended | 4 AST rules + tracemalloc + Scalpel Docker bridge |
 | 4 LLM-optimized feedback | ✓ integrated + A/B verified | Unified schema (Phase 1+2+3) + history + per-rule threshold + pre-emptive hint |
 | 5 OSS release | ✓ initial push | GitHub public repo + v0.1.0 release |

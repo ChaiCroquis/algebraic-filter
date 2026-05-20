@@ -157,7 +157,7 @@ CrossHair + QWED, recommended in AET-OS PDF §4.2, are the Python formal-verific
 A/B measurement evidence (see [docs/evidence_summary.md](evidence_summary.md)):
 - 5-task version (raw-code niche): pass@1 +80%
 - 12-sample wide version (curated niche): pass@1 +8.3%
-- Both niches clear withdrawal criterion (+5%) = AF effectiveness substantiated
+- Both niches clear withdrawal criterion (+5%) **on this corpus** (small n, single run, AF's own samples — not a general guarantee)
 
 ---
 

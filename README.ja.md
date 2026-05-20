@@ -203,7 +203,7 @@ python scripts/ab_automation_wide.py
 |---|---|---|
 | 0 Pre-reg + baseline | ✓ closing (2026-05-19) | H1-H4 / S0-1〜S0-5 全達成、 LayerForge baseline 確定 |
 | 1 PostToolUse hook | ✓ end-to-end 動作確認済 | 46 sample + 5 hook test + 4 A/B test |
-| 2 代数法則 PBT 自動生成 | ✓ 深掘り完成 | 13 法則 + hypothesis-target subset 100% coverage |
+| 2 代数法則 PBT 自動生成 | ✓ 深掘り完成 | 13 法則; hypothesis-target subset で 100%、 全 46 sample では ~21.7% (= 特化 niche) |
 | 3 データ移動量 | ✓ 拡張完成 | 4 rule AST + tracemalloc + Scalpel Docker bridge |
 | 4 LLM 最適化フィードバック | ✓ integrated + A/B verified | 統一 schema (Phase 1+2+3) + history + per-rule threshold + pre-emptive hint |
 

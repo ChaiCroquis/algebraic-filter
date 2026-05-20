@@ -9,14 +9,17 @@
 - **3 層検証パイプライン**: Layer 1 静的 (ruff 標準 + AF 独自 AST 4 rule) / Layer 2 代数法則 PBT (hypothesis 自動生成) / Layer 3 データ移動量 (tracemalloc + Scalpel Docker bridge)
 - **end-to-end Claude 自己修正サイクル**: 多 step feedback chain (PERF401 → ANN201 → ANN001 → PASS) を実 Claude Code session で動作確認
 
-## A/B 計測 evidence (= 真の AF 効果立証)
+## A/B 計測 evidence (= 小規模、 各自再現前提)
 
 | niche | hook OFF 完成度 | hook ON 完成度 | delta |
 |---|---|---|---|
 | AI 生成 raw コード (= 型注釈なし、 5 sample) | 20% | 100% | **+80%** |
 | 整理済みコード (= 型注釈完備、 12 sample) | 91.7% | 100% | +8.3% |
 
-両 niche で Phase 1 撤退判定基準 (= pass@1 +5%) クリア = AF 有効性立証。
+> 小 n (5/12)、 単一実行、 AF 自前 sample、 単一 model での計測。 Phase 1 撤退判定
+> 基準 (= pass@1 +5%) を **この corpus で** クリアしたもので、 一般保証ではない。
+> +80% は floor の低い raw niche、 +8.3% が well-typed での代表値。 結果は corpus /
+> model / prompt で変動。 各自 `python scripts/ab_automation.py` で再現すること。
 
 ## Phase 0 H1-H4 binding 仮説 達成
 

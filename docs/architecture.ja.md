@@ -152,7 +152,7 @@ AET-OS PDF §4.2 で推奨される CrossHair + QWED は Python 形式検証の 
 A/B 計測 evidence (= [docs/evidence_summary.ja.md](evidence_summary.ja.md)):
 - 5 task 版 (raw コード niche): pass@1 +80%
 - 12 sample wide 版 (整理済 niche): pass@1 +8.3%
-- 両 niche で 撤退判定基準 (+5%) クリア = AF 有効性立証
+- 両 niche で 撤退判定基準 (+5%) を **この corpus で** クリア (= 小 n / 単一実行 / AF 自前 sample、 一般保証ではない)
 
 ---
 
