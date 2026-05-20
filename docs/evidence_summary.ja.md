@@ -226,37 +226,57 @@ Pre-emptive hint: review the alternative skeleton before re-writing.
 
 ## 7. 競合比較 (claude-code-quality-hook) — 2026-05-20 実測
 
-46 sample violation corpus での **検出** head-to-head 比較。
-competitor stack は **ruff + pyright** (= 主要 Python layer) で近似、
-AF stack は **ruff(PERF/SIM/FURB/ANN/F) + Phase 3 AST + Phase 2 runtime PBT**。
-本比較は *検出カバレッジのみ* を測る — **修正成功率や competitor の 3 段 AI 修正
-pipeline は測っていない** (= Claude API session を要し、 本 deterministic 比較の scope 外)。
+46 sample violation corpus での head-to-head 比較。 competitor の **実際の**
+Python stack (= source `quality-hook.py` から確認) は **`ruff check` で
+`--select` なし (= ruff デフォルト E/F) + pyright** で、 AF の rule selection
+ではない。 AF stack = **ruff(PERF/SIM/FURB/ANN/F/RUF013) + Phase 3 AST + Phase 2
+runtime PBT**。
 
-### 7-1. static layer のみ (= AF Phase 2 runtime 抜き)
+> ⚠️ **corpus bias 開示 (最初に読むこと)**: この 46 sample は *AF が自分の
+> target defect (代数法則 / perf / データ移動量) を showcase するため設計* した。
+> **AF の home field であって中立 benchmark ではない**。 型エラー主体の corpus
+> なら competitor の pyright が勝つ。 以下の数値は *どちらの tool がどの defect
+> class を狙うか* を示すもので、 一般的優劣ランキングではない。
 
-| stack | 検出 | カバレッジ |
-|---|---|---|
-| AF static (ruff + Phase 3 AST) | 16/46 | 35% |
-| competitor (ruff + pyright) | 18/46 | 39% |
-
-**純 static layer では competitor の方が多く検出** (= pyright が AF の ruff
-selection が見逃す型レベル defect を捕捉)。 確認: Layer 1 型検査では
-claude-code-quality-hook が強い選択肢。
-
-### 7-2. AF full stack (= Phase 2 runtime PBT 込み、 opt-in)
+### 7-1. 検出 — competitor の実構成で訂正
 
 | stack | 検出 | カバレッジ |
 |---|---|---|
-| AF full (ruff + Phase 3 + Phase 2 runtime) | 27/46 | 59% |
-| competitor (ruff + pyright) | 18/46 | 39% |
+| competitor ruff (デフォルト E/F) | **0**/46 | 0% |
+| competitor pyright | 7/46 | 15% |
+| **competitor full (ruff default + pyright)** | **7**/46 | **15%** |
+| AF ruff (PERF/SIM/FURB/ANN/F/RUF013) | 12/46 | 26% |
+| **AF full (ruff + Phase 3 + Phase 2 runtime)** | **28**/46 | **61%** |
 
-- **AF-only 検出 (14)**: 代数法則違反 (monoid / commutativity / functor /
-  foldable) + データ移動量 (intermediate-list-chain / string-concat /
-  unnecessary-copy) — competitor に counterpart layer なし。
-- **competitor-only 検出 (5)**: `missing_optional_handling`,
-  `ruf013_implicit_optional`, `monad_associativity_violation`,
-  `monad_right_identity_violation`, `fmap_unit_violation` — pyright が
-  **型エラー** として捕捉 (= AF の法則 check とは別 defect class)。
+**訂正注記**: 本 section の旧 draft は competitor に *AF の* ruff selection を
+与えて 18/46 としていた = 過大評価。 competitor の ruff はデフォルト動作で、
+この corpus の perf/algebraic sample を **0 件** しか検出しない — 7 件は全て
+pyright 型検査由来。
+
+- **AF-only 検出 (25)**: 代数法則 (monoid / commutativity / functor /
+  foldable) + perf/データ移動量 (intermediate-list-chain / string-concat /
+  unnecessary-copy) + AF の ruff selection (PERF/SIM/FURB/ANN) — いずれも
+  competitor のデフォルト ruff は対象外。
+- **competitor-only 検出 (4)**: `missing_optional_handling`,
+  `fmap_unit_violation`, `monad_associativity_violation`,
+  `monad_right_identity_violation` — pyright が **型エラー** として捕捉
+  (= AF の代数法則 check とは別 defect class)。
+
+### 7-2. 修正 outcome モデル — competitor の AI 修正は未測定
+
+competitor の目玉「3 段 AI 自動修正」 pipeline は protected 環境で **発動せず**:
+
+- standalone 起動で `Claude Code not available` を log → competitor は
+  `subprocess.run(['claude', ...])` を hard-code、 Windows `CreateProcess` が
+  `.cmd` を解決できず AI stage skip。
+- AI stage は `claude -p ... --dangerously-skip-permissions` で nested 自律
+  agent を spawn する。 これは別リスク class (= permission-bypass された agent
+  spawn) で chai の明示承認が必要、 **未実行**。
+- **AI stage 不在時、 competitor は `exit 2 + feedback` で 呼び出し元 Claude に
+  修正を委任 = AF と同じ outcome model**。
+
+よって competitor の AI pipeline の修正成功率は **未測定** (= honest
+limitation)。 AF 自身の修正成功率は §6 で別途実測 (= 20→100% / 91.7→100%)。
 
 ### 7-3. 着手した gap 閉鎖
 
@@ -271,12 +291,18 @@ claude-code-quality-hook が強い選択肢。
 
 ### 7-4. honest positioning 結論
 
-- AF の **Layer 1 (lint/型) は competitor より優れていない**。 RUF013 fix で
-  1 gap 閉じるが `missing_optional_handling` は残存。
+- AF と competitor は **異なる defect class を狙う**: AF = 代数法則 / perf /
+  データ移動量、 competitor = 型エラー (pyright)。 AF の home-field corpus では
+  AF が 28 vs 7 でリードするが、 これは一般的優位を過大表現 (= 上記 corpus bias)。
+- competitor のデフォルト ruff は **lint で AF より弱い** (= この corpus で 0
+  検出) が、 pyright は **AF が持たない型検査の edge** (= AF が見逃す型エラー 4
+  件を捕捉、 `missing_optional_handling` は真の gap)。
 - AF の **defensible value は Layer 2/3** (= 代数法則 + データ移動量)、
   competitor に counterpart 不在。 ただし立証は *hook-off baseline* 比であって、
   代替 law-checking 手法との比較ではない。
-- [README.ja.md](../README.ja.md) の適用域マトリクスは Layer-1-only 利用者を
+- competitor は **Windows 非対応** (= claude `.cmd` 解決 + cp932 encoding crash)、
+  AF は両方 handle 済。
+- [README.ja.md](../README.ja.md) の適用域マトリクスは Layer-1-型検査 利用者を
   competitor に正しく振り分けている。
 
 ---

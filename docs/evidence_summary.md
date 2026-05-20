@@ -227,38 +227,59 @@ Pre-emptive hint: review the alternative skeleton before re-writing.
 
 ## 7. Competitor comparison (claude-code-quality-hook) — measured 2026-05-20
 
-Head-to-head **detection** comparison on the 46-sample violation corpus.
-Competitor stack approximated as **ruff + pyright** (its primary Python layer);
-AF stack as **ruff(PERF/SIM/FURB/ANN/F) + Phase 3 AST + Phase 2 runtime PBT**.
-This measures *detection coverage only* — it does **not** measure fix-success
-rate or the competitor's 3-stage AI-repair pipeline (that requires a Claude
-API session = out of this deterministic comparison's scope).
+Head-to-head comparison on the 46-sample violation corpus. The competitor's
+**actual** Python stack (read from its source `quality-hook.py`) is
+**`ruff check` with NO `--select` (= ruff defaults E/F) + pyright**, NOT the
+AF rule selection. AF stack = **ruff(PERF/SIM/FURB/ANN/F/RUF013) + Phase 3 AST
++ Phase 2 runtime PBT**.
 
-### 7-1. Static layer only (no AF Phase 2 runtime)
+> ⚠️ **Corpus bias disclosure (read first)**: these 46 samples were *designed
+> by AF* to showcase AF's target defects (algebraic laws / perf / data-movement).
+> This is **AF's home field, not a neutral benchmark**. On a corpus dominated by
+> type errors, the competitor's pyright would lead. The numbers below show
+> *which tool targets which defect class*, NOT a general superiority ranking.
 
-| Stack | Detected | Coverage |
-|---|---|---|
-| AF static (ruff + Phase 3 AST) | 16/46 | 35% |
-| competitor (ruff + pyright) | 18/46 | 39% |
-
-**On the pure static layer, the competitor detects more** (pyright catches
-type-level defects AF's ruff selection misses). This confirms: for Layer-1
-type checking, claude-code-quality-hook is the stronger choice.
-
-### 7-2. Full AF stack (incl. Phase 2 runtime PBT, opt-in)
+### 7-1. Detection — corrected with competitor's actual config
 
 | Stack | Detected | Coverage |
 |---|---|---|
-| AF full (ruff + Phase 3 + Phase 2 runtime) | 27/46 | 59% |
-| competitor (ruff + pyright) | 18/46 | 39% |
+| competitor ruff (defaults E/F) | **0**/46 | 0% |
+| competitor pyright | 7/46 | 15% |
+| **competitor full (ruff default + pyright)** | **7**/46 | **15%** |
+| AF ruff (PERF/SIM/FURB/ANN/F/RUF013) | 12/46 | 26% |
+| **AF full (ruff + Phase 3 + Phase 2 runtime)** | **28**/46 | **61%** |
 
-- **AF-only catches (14)**: algebraic-law violations (monoid / commutativity /
-  functor / foldable) + data-movement (intermediate-list-chain / string-concat /
-  unnecessary-copy) — the competitor has no counterpart layer.
-- **competitor-only catches (5)**: `missing_optional_handling`,
-  `ruf013_implicit_optional`, `monad_associativity_violation`,
-  `monad_right_identity_violation`, `fmap_unit_violation` — pyright catches
-  these as **type errors** (a different defect class than AF's law check).
+**Correction note**: an earlier draft of this section wrongly gave the
+competitor *AF's* ruff selection (yielding 18/46). That was an over-credit.
+The competitor's ruff runs with defaults and catches **0** of this corpus's
+perf/algebraic samples — its entire 7 comes from pyright type checking.
+
+- **AF-only catches (25)**: algebraic-law (monoid / commutativity / functor /
+  foldable) + perf/data-movement (intermediate-list-chain / string-concat /
+  unnecessary-copy) + AF's ruff selection (PERF/SIM/FURB/ANN) — none of which
+  the competitor's default ruff targets.
+- **competitor-only catches (4)**: `missing_optional_handling`,
+  `fmap_unit_violation`, `monad_associativity_violation`,
+  `monad_right_identity_violation` — pyright catches these as **type errors**
+  (a different defect class than AF's algebraic-law check).
+
+### 7-2. Fix-outcome model — competitor's AI-repair NOT measured
+
+The competitor's headline "3-stage AI auto-fix" pipeline **did not activate**
+in a protected environment:
+
+- Standalone invocation logged `Claude Code not available` → the competitor
+  hard-codes `subprocess.run(['claude', ...])`, which Windows `CreateProcess`
+  cannot resolve (`.cmd` not auto-appended) → AI stage skipped.
+- Its AI stage spawns `claude -p ... --dangerously-skip-permissions` nested
+  autonomous agents. Running that is a distinct risk class (permission-bypassed
+  agent spawning) requiring explicit sovereign approval; **not executed**.
+- **When its AI stage is unavailable, the competitor returns `exit 2 + feedback`
+  and delegates the fix to the calling Claude — the SAME outcome model as AF.**
+
+So fix-success quality of the competitor's AI pipeline is **unmeasured**
+(honest limitation). AF's own fix-success is measured separately (§6:
+20→100% / 91.7→100%).
 
 ### 7-3. Actioned gap closure
 
@@ -274,13 +295,20 @@ type checking, claude-code-quality-hook is the stronger choice.
 
 ### 7-4. Honest positioning conclusion
 
-- AF's **Layer 1 (lint/type) is not superior** to the competitor; with the
-  RUF013 fix it closes one gap but `missing_optional_handling` remains.
+- AF and the competitor **target different defect classes**: AF =
+  algebraic-law / perf / data-movement; competitor = type errors (pyright).
+  On AF's home-field corpus AF leads 28 vs 7, but this overstates general
+  superiority (corpus bias above).
+- The competitor's default ruff is **weaker on lint** than AF's selection
+  (catches 0 here) but its **pyright is a real type-checking edge** AF lacks
+  (4 type-error catches AF misses; `missing_optional_handling` is a true gap).
 - AF's **defensible value is Layer 2/3** (algebraic-law + data-movement),
-  where no competitor counterpart exists — but this is verified against
-  *hook-off baseline*, not against alternative law-checking approaches.
+  where no competitor counterpart exists — verified against *hook-off baseline*,
+  not against alternative law-checking approaches.
+- The competitor is **not Windows-ready** (claude `.cmd` resolution + cp932
+  encoding crashes), whereas AF handles both.
 - The applicability matrix in [README.md](../README.md) correctly routes
-  Layer-1-only users to the competitor.
+  Layer-1-type-checking users to the competitor.
 
 ---
 
