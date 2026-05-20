@@ -86,16 +86,26 @@ firing independently on the same edit. Choose either track:
 
 #### Track A — Claude Code plugin (recommended, no manual wiring)
 
-AF ships as a Claude Code plugin (`.claude-plugin/plugin.json` + `hooks/hooks.json`).
-Load it as an add-on:
+AF ships as a Claude Code plugin (`.claude-plugin/plugin.json` + `hooks/hooks.json`)
+**and** a self-hosted marketplace (`.claude-plugin/marketplace.json`).
+
+Install from the marketplace (inside a Claude Code session):
+
+```
+/plugin marketplace add ChaiCroquis/algebraic-filter
+/plugin install algebraic-filter@algebraic-filter-marketplace
+```
+
+Or load locally for development:
 
 ```bash
-# Local / development
 claude --plugin-dir /absolute/path/to/algebraic-filter
-
-# Or install from a marketplace (once published):
-# /plugin install algebraic-filter@<marketplace>
 ```
+
+Either way the PostToolUse hook registers automatically via
+`${CLAUDE_PLUGIN_ROOT}` and runs **in addition to** your existing hooks /
+other plugins (additive composition — verified end-to-end, see
+[docs/evidence_summary.md](docs/evidence_summary.md) §8).
 
 The plugin registers its PostToolUse hook automatically via
 `${CLAUDE_PLUGIN_ROOT}`; it runs **in addition to** your existing hooks and any

@@ -1,0 +1,29 @@
+{
+  "name": "algebraic-filter-marketplace",
+  "owner": {
+    "name": "ChaiCroquis",
+    "url": "https://github.com/ChaiCroquis"
+  },
+  "metadata": {
+    "description": "Self-hosted marketplace for algebraic-filter — an additive +α PostToolUse hook that adds algebraic-law + data-movement verification on top of any base quality tooling.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "algebraic-filter",
+      "source": {
+        "source": "github",
+        "repo": "ChaiCroquis/algebraic-filter"
+      },
+      "description": "Algebraic-law-level machine verification guardrail for AI-generated Python code. Detects Monoid/Functor/Monad-law violations + data-movement defects that lint/type-checkers miss, and feeds structured feedback back to Claude for self-correction. Composes additively on top of ruff/pyright/other hooks.",
+      "category": "code-quality",
+      "keywords": [
+        "hook",
+        "post-tool-use",
+        "property-based-testing",
+        "algebraic-laws",
+        "python"
+      ]
+    }
+  ]
+}
