@@ -1,0 +1,17 @@
+[
+  {
+    "timestamp": "2026-05-21T08:30:14",
+    "rule_id": "ANN201",
+    "file_path": "C:\\work\\_plugin_smoke\\scratch\\target.py"
+  },
+  {
+    "timestamp": "2026-05-21T08:30:14",
+    "rule_id": "ANN001",
+    "file_path": "C:\\work\\_plugin_smoke\\scratch\\target.py"
+  },
+  {
+    "timestamp": "2026-05-21T08:30:14",
+    "rule_id": "PERF401",
+    "file_path": "C:\\work\\_plugin_smoke\\scratch\\target.py"
+  }
+]

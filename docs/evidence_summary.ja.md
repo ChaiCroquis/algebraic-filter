@@ -307,6 +307,36 @@ limitation)。 AF 自身の修正成功率は §6 で別途実測 (= 20→100% /
 
 ---
 
+## 8. 「任意 base への +α plugin」 — live 合成検証 (2026-05-21)
+
+additive-layer モデル (= AF を Claude Code plugin として任意 base の上に乗せる) を
+2 層で検証:
+
+### 8-1. deterministic 合成 (5 tests、 [test_plugin_packaging.py](../samples/violations/tests/test_plugin_packaging.py))
+- plugin.json / hooks.json 妥当 + PostToolUse + `${CLAUDE_PLUGIN_ROOT}`
+- hook command 解決 + clean file で exit 0
+- read-only install 模擬下で history path writable
+- **additive 合成**: mock "base" 型検査 hook + AF hook が同一 file (型エラー +
+  monoid 違反) で各々別 defect を衝突なく検出。
+
+### 8-2. live plugin load (実 `claude --plugin-dir` session)
+`claude --plugin-dir <AF> --print` で違反関数を書かせた。 evidence
+([_plugin_verification/live_plugin_load_hook_fire_2026-05-21.json](_plugin_verification/live_plugin_load_hook_fire_2026-05-21.json)):
+- session が **AF を plugin として load**、 PostToolUse hook が **live Write で
+  発火** — model 自身が *「a PostToolUse plugin hook (algebraic-filter,
+  ruff-based) flagged the write with three findings」* と報告。
+- anti-pattern history に 3 違反 (PERF401 / ANN001 / ANN201) を実書込 = hook が
+  実走した物理証跡。
+- **設計哲学も live 実証**: model は PERF401 の修正を user 指示と衝突するとして
+  **あえて拒否** = hook は feedback、 LLM 自律は保持 (= constrained decoding でなく
+  hook 方式)。
+
+> scope: 単一手動 smoke 実行、 単一 model、 Windows 上。 plugin-load + hook-fire
+> + additive-feedback の経路が end-to-end で動くことの実証であり、 統計的主張では
+> ない。
+
+---
+
 ## 関連参照
 
 - [docs/architecture.ja.md](architecture.ja.md) — 詳細アーキテクチャ

@@ -312,6 +312,37 @@ So fix-success quality of the competitor's AI pipeline is **unmeasured**
 
 ---
 
+## 8. "+α plugin on any base" — live composition verification (2026-05-21)
+
+The additive-layer model (AF as a Claude Code plugin sitting on top of any
+base tooling) is verified at two levels:
+
+### 8-1. Deterministic composition (5 tests, [test_plugin_packaging.py](../samples/violations/tests/test_plugin_packaging.py))
+- plugin.json / hooks.json valid + PostToolUse + `${CLAUDE_PLUGIN_ROOT}`
+- hook command resolves and exits 0 on clean file
+- history path writable under a simulated read-only install
+- **additive composition**: a mock "base" type-checker hook + the AF hook
+  both fire on ONE file (type error + monoid violation), each catching its
+  own defect class with zero cross-contamination.
+
+### 8-2. Live plugin load (real `claude --plugin-dir` session)
+Ran `claude --plugin-dir <AF> --print` and asked it to write a violating
+function. Evidence ([_plugin_verification/live_plugin_load_hook_fire_2026-05-21.json](_plugin_verification/live_plugin_load_hook_fire_2026-05-21.json)):
+- The session **loaded AF as a plugin** and the PostToolUse hook **fired on
+  the live Write** — the model itself reported: *"a PostToolUse plugin hook
+  (algebraic-filter, ruff-based) flagged the write with three findings"*.
+- The anti-pattern history recorded 3 real violations (PERF401 / ANN001 /
+  ANN201) at the written file path = physical proof the hook executed.
+- **Design philosophy confirmed live**: the model *declined* to "fix" PERF401
+  because it conflicted with the user's explicit instruction — i.e. the hook
+  gives feedback but the LLM keeps autonomy (hook over constrained decoding).
+
+> Scope: single manual smoke run, one model, on Windows. Proves the
+> plugin-load + hook-fire + additive-feedback path works end-to-end; it is
+> not a statistical claim.
+
+---
+
 ## See also
 
 - [docs/architecture.md](architecture.md) — Detailed architecture
