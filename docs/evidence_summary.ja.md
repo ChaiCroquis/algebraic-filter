@@ -224,6 +224,63 @@ Pre-emptive hint: review the alternative skeleton before re-writing.
 
 ---
 
+## 7. 競合比較 (claude-code-quality-hook) — 2026-05-20 実測
+
+46 sample violation corpus での **検出** head-to-head 比較。
+competitor stack は **ruff + pyright** (= 主要 Python layer) で近似、
+AF stack は **ruff(PERF/SIM/FURB/ANN/F) + Phase 3 AST + Phase 2 runtime PBT**。
+本比較は *検出カバレッジのみ* を測る — **修正成功率や competitor の 3 段 AI 修正
+pipeline は測っていない** (= Claude API session を要し、 本 deterministic 比較の scope 外)。
+
+### 7-1. static layer のみ (= AF Phase 2 runtime 抜き)
+
+| stack | 検出 | カバレッジ |
+|---|---|---|
+| AF static (ruff + Phase 3 AST) | 16/46 | 35% |
+| competitor (ruff + pyright) | 18/46 | 39% |
+
+**純 static layer では competitor の方が多く検出** (= pyright が AF の ruff
+selection が見逃す型レベル defect を捕捉)。 確認: Layer 1 型検査では
+claude-code-quality-hook が強い選択肢。
+
+### 7-2. AF full stack (= Phase 2 runtime PBT 込み、 opt-in)
+
+| stack | 検出 | カバレッジ |
+|---|---|---|
+| AF full (ruff + Phase 3 + Phase 2 runtime) | 27/46 | 59% |
+| competitor (ruff + pyright) | 18/46 | 39% |
+
+- **AF-only 検出 (14)**: 代数法則違反 (monoid / commutativity / functor /
+  foldable) + データ移動量 (intermediate-list-chain / string-concat /
+  unnecessary-copy) — competitor に counterpart layer なし。
+- **competitor-only 検出 (5)**: `missing_optional_handling`,
+  `ruf013_implicit_optional`, `monad_associativity_violation`,
+  `monad_right_identity_violation`, `fmap_unit_violation` — pyright が
+  **型エラー** として捕捉 (= AF の法則 check とは別 defect class)。
+
+### 7-3. 着手した gap 閉鎖
+
+- **`ruf013_implicit_optional`** → AF の ruff select に `RUF013` 追加で閉鎖
+  (= sample 検出確認、 `fixed/` ground-truth で FP ゼロ実測。 `RUF` 全体は
+  `RUF002` が docstring の ambiguous Unicode `×` を flag するため不採用)。
+- **`missing_optional_handling`** → 真の AF gap。 pyright 型 dataflow 解析が
+  必要で ruff では不可。 未閉鎖 (= honest limitation)。
+- **monad / fmap_unit 法則** → AF Phase 2 coverage gap: `auto_test()`
+  単関数 API が monad-pair 法則を skip (= `auto_test_monad_pair` 要、 runner
+  未配線)。 Phase 2 既知 limitation。
+
+### 7-4. honest positioning 結論
+
+- AF の **Layer 1 (lint/型) は competitor より優れていない**。 RUF013 fix で
+  1 gap 閉じるが `missing_optional_handling` は残存。
+- AF の **defensible value は Layer 2/3** (= 代数法則 + データ移動量)、
+  competitor に counterpart 不在。 ただし立証は *hook-off baseline* 比であって、
+  代替 law-checking 手法との比較ではない。
+- [README.ja.md](../README.ja.md) の適用域マトリクスは Layer-1-only 利用者を
+  competitor に正しく振り分けている。
+
+---
+
 ## 関連参照
 
 - [docs/architecture.ja.md](architecture.ja.md) — 詳細アーキテクチャ

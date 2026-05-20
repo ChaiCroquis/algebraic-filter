@@ -225,6 +225,65 @@ Pre-emptive hint: review the alternative skeleton before re-writing.
 
 ---
 
+## 7. Competitor comparison (claude-code-quality-hook) — measured 2026-05-20
+
+Head-to-head **detection** comparison on the 46-sample violation corpus.
+Competitor stack approximated as **ruff + pyright** (its primary Python layer);
+AF stack as **ruff(PERF/SIM/FURB/ANN/F) + Phase 3 AST + Phase 2 runtime PBT**.
+This measures *detection coverage only* — it does **not** measure fix-success
+rate or the competitor's 3-stage AI-repair pipeline (that requires a Claude
+API session = out of this deterministic comparison's scope).
+
+### 7-1. Static layer only (no AF Phase 2 runtime)
+
+| Stack | Detected | Coverage |
+|---|---|---|
+| AF static (ruff + Phase 3 AST) | 16/46 | 35% |
+| competitor (ruff + pyright) | 18/46 | 39% |
+
+**On the pure static layer, the competitor detects more** (pyright catches
+type-level defects AF's ruff selection misses). This confirms: for Layer-1
+type checking, claude-code-quality-hook is the stronger choice.
+
+### 7-2. Full AF stack (incl. Phase 2 runtime PBT, opt-in)
+
+| Stack | Detected | Coverage |
+|---|---|---|
+| AF full (ruff + Phase 3 + Phase 2 runtime) | 27/46 | 59% |
+| competitor (ruff + pyright) | 18/46 | 39% |
+
+- **AF-only catches (14)**: algebraic-law violations (monoid / commutativity /
+  functor / foldable) + data-movement (intermediate-list-chain / string-concat /
+  unnecessary-copy) — the competitor has no counterpart layer.
+- **competitor-only catches (5)**: `missing_optional_handling`,
+  `ruf013_implicit_optional`, `monad_associativity_violation`,
+  `monad_right_identity_violation`, `fmap_unit_violation` — pyright catches
+  these as **type errors** (a different defect class than AF's law check).
+
+### 7-3. Actioned gap closure
+
+- **`ruf013_implicit_optional`** → closed by adding `RUF013` to AF's ruff
+  select (verified: catches the sample, zero false-positive on the `fixed/`
+  ground-truth corpus; `RUF` wholesale rejected because `RUF002` flags
+  ambiguous Unicode `×` in docstrings).
+- **`missing_optional_handling`** → genuine AF gap; requires pyright-style
+  dataflow analysis that ruff cannot perform. Not closed (honest limitation).
+- **monad / fmap_unit laws** → AF Phase 2 coverage gap: `auto_test()`
+  single-function API skips monad-pair laws (needs `auto_test_monad_pair`,
+  not wired into the runner). Known Phase 2 limitation.
+
+### 7-4. Honest positioning conclusion
+
+- AF's **Layer 1 (lint/type) is not superior** to the competitor; with the
+  RUF013 fix it closes one gap but `missing_optional_handling` remains.
+- AF's **defensible value is Layer 2/3** (algebraic-law + data-movement),
+  where no competitor counterpart exists — but this is verified against
+  *hook-off baseline*, not against alternative law-checking approaches.
+- The applicability matrix in [README.md](../README.md) correctly routes
+  Layer-1-only users to the competitor.
+
+---
+
 ## See also
 
 - [docs/architecture.md](architecture.md) — Detailed architecture

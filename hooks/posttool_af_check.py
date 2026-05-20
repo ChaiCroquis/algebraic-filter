@@ -58,7 +58,11 @@ except Exception:
     _phase2_enabled = None  # type: ignore
 
 
-SELECT_RULES = "PERF,SIM,FURB,ANN,F"
+# RUF013 (implicit-optional) を追加 = competitor (pyright) との比較実測で判明した
+# 型安全 gap を 1 件閉じる (= ruf013_implicit_optional sample)。
+# RUF 全体は RUF002 (docstring unicode ambiguity) の false-positive を生むため、
+# RUF013 のみ pin 追加 (fixed/ ground-truth で FP ゼロを実測確認、 2026-05-20)。
+SELECT_RULES = "PERF,SIM,FURB,ANN,F,RUF013"
 MAX_FEEDBACK_CHARS = 2000
 
 
