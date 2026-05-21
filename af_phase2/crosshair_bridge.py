@@ -96,8 +96,12 @@ def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
 
     parts = [src, f"op = {fname}\n"]
     seen: set[str] = set()
+    # suffix -> 実際に推論された law (= 複数 law が同 suffix を共有しても、 この関数で
+    # 推論された law を first-wins で対応付け、 報告 law_id の取り違えを防ぐ)
+    suffix_to_law: dict[str, str] = {}
     for law in laws:
         suffix, params, expr = _LAW_CONTRACT[law]
+        suffix_to_law.setdefault(suffix, law)
         if suffix in seen:
             continue
         seen.add(suffix)
@@ -125,7 +129,6 @@ def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
         return []
 
     out = (result.stdout or "") + (result.stderr or "")
-    suffix_to_law = {v[0]: k for k, v in _LAW_CONTRACT.items()}
     violations: list[dict[str, str]] = []
     for line in out.splitlines():
         if "false when calling" not in line:
