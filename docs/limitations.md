@@ -10,6 +10,41 @@ probe you can reproduce (see [Reproduce](#reproduce)).
 > lint), not *intent* (whether the code matches the spec).** It can tell that
 > `average` should be commutative; it cannot tell whether `average` should add 1.
 
+## What "verification" precisely means
+
+Two points that are easy to over-read:
+
+**1. What Phase 2 guarantees — law-level, not correctness, and name-gated.**
+Phase 2 checks whether a function satisfies an algebraic *law* (e.g. `sum` is
+associative, `average` is commutative), not whether it is correct. "Satisfies
+the law" ≠ "matches the spec": a commutative `average` that wrongly adds 1 still
+passes. The guarantee has three conditions, all required:
+
+- the inferrer **recognizes the name** (otherwise no law is checked at all);
+- only the **law inferred from that name** is checked (`merge` → commutativity
+  only; a broken associativity on `merge` is not checked);
+- strength is two-tier — **hypothesis sampling = probabilistic confidence, not
+  proof** (a violation that only shows on rare inputs can be missed); **CrossHair
+  (opt-in) = deterministic proof, but bounded** to binary functions + assoc/commut
+  (identity/functor/monad stay sampling-only).
+
+Precise sentence: *Phase 2 guarantees that a recognized-name function satisfies
+its inferred law, at sampling confidence (or CrossHair proof where applicable).*
+Strong, but conditional and narrow.
+
+**2. Coverage is decided by defect CLASS, not by difficulty.**
+Whether AF catches a bug depends on its kind, not how hard it is — a hard bug of
+the right class is caught; an easy bug of the wrong class passes clean.
+
+- **In class (caught — AF's usable niche):** algebraic-law violations,
+  data-movement inefficiency, lint (PERF/SIM/FURB/F/RUF), types (pyright in
+  hybrid mode).
+- **Out of class (passes → route to another tool):** general logic bugs,
+  security, concurrency, spec intent, and law violations on unrecognized names.
+
+The algebraic-law class alone carries an **extra double gate** the others do not:
+**a recognized name AND the bug manifesting as a violation of the inferred law.**
+
 ## ① What it does (measured true positives)
 
 | Capability | Layer | Notes |
