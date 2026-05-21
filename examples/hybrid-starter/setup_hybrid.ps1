@@ -1,12 +1,54 @@
 # Hybrid starter setup (Windows / PowerShell)
-# Clones the base (claude-code-quality-hook), installs deps, and wires
-# .claude/settings.json so the base hook fires. The +alpha (algebraic-filter)
-# is installed separately as a plugin inside a Claude Code session.
 #
-# Run from inside your copied starter project:  .\setup_hybrid.ps1
+# Auto-selects the mode (chai's "Docker if available, else normal"):
+#   - Docker present  -> Docker mode: builds the af-hybrid image (AF +alpha +
+#     pyright base, all in-container) and wires .claude/settings.json to it.
+#     ZERO host deps (no python/node/pip on host); no plugin install needed.
+#   - No Docker       -> venv mode: creates .venv, installs ruff/hypothesis/
+#     pyright into it (no global install), clones the base, wires the base hook.
+#     The +alpha (algebraic-filter) is added as a plugin inside the session.
+#
+# Force venv even when Docker exists:  .\setup_hybrid.ps1 -Venv
+# Run from inside your copied starter project.
+param([switch]$Venv)
 
 $ErrorActionPreference = "Stop"
 $proj = (Get-Location).Path
+
+$hasDocker = $false
+if (-not $Venv) {
+    try { docker --version *> $null; $hasDocker = ($LASTEXITCODE -eq 0) } catch { $hasDocker = $false }
+}
+
+if ($hasDocker) {
+    Write-Host "== Docker detected -> Docker mode (zero host deps) ==" -ForegroundColor Cyan
+
+    Write-Host "== 1/2 build af-hybrid image (AF +alpha + pyright base) =="
+    docker build -t af-hybrid "$proj\docker"
+
+    Write-Host "== 2/2 wire container hook into .claude/settings.json =="
+    New-Item -ItemType Directory -Force "$proj\.claude" | Out-Null
+    # -v needs a Windows path; AF_HOST_PROJECT lets the container map host->/work
+    $cmd = "docker run -i --rm -v `"$proj`:/work`" -e AF_HOST_PROJECT=`"$proj`" -e AF_HOOK_PHASE2_PBT=1 af-hybrid"
+    $settings = @{
+        hooks = @{
+            PostToolUse = @(
+                @{ matcher = "Write|Edit|MultiEdit"; hooks = @(@{ type = "command"; command = $cmd }) }
+            )
+        }
+    }
+    $settings | ConvertTo-Json -Depth 6 | Out-File -Encoding utf8 "$proj\.claude\settings.json"
+
+    Write-Host ""
+    Write-Host "Docker hybrid wired. Next:" -ForegroundColor Green
+    Write-Host "  1. claude        (the container hook runs AF +alpha + pyright on each .py edit)"
+    Write-Host "  2. ask Claude to fix scratch/try_me.py -> both layers fire from the container"
+    Write-Host ""
+    Write-Host "No venv / plugin install needed in Docker mode — everything is in the image."
+    return
+}
+
+Write-Host "== No Docker -> venv mode (no global install) ==" -ForegroundColor Cyan
 
 Write-Host "== 1/4 clone base (claude-code-quality-hook) =="
 if (-not (Test-Path "$proj\claude-code-quality-hook")) {
@@ -17,7 +59,6 @@ if (-not (Test-Path "$proj\claude-code-quality-hook")) {
 
 Write-Host "== 2/4 venv + deps (ruff / hypothesis / pyright) — no global install =="
 if (-not (Test-Path "$proj\.venv")) { python -m venv .venv }
-# install into the venv directly (pyright via pip = no global npm pollution)
 & "$proj\.venv\Scripts\python.exe" -m pip install --upgrade pip
 & "$proj\.venv\Scripts\python.exe" -m pip install ruff hypothesis pyright
 
@@ -49,7 +90,7 @@ $settings = @{
 $settings | ConvertTo-Json -Depth 6 | Out-File -Encoding utf8 "$proj\.claude\settings.json"
 
 Write-Host ""
-Write-Host "Base wired. Next:" -ForegroundColor Green
+Write-Host "Base wired (venv mode). Next:" -ForegroundColor Green
 Write-Host "  1. Activate the venv IN THIS SHELL (so hooks inherit its python/ruff/pyright):"
 Write-Host "       .\.venv\Scripts\Activate.ps1"
 Write-Host "  2. Launch Claude Code FROM the activated shell:"

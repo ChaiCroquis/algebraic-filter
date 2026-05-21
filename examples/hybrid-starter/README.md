@@ -39,11 +39,29 @@ macOS / Linux: use `setup_hybrid.sh` instead of the `.ps1` (steps 3-6 identical)
 
 ---
 
+## Two modes (auto-selected)
+
+`setup_hybrid` picks the mode for you (chai's "Docker if available, else normal"):
+
+- **Docker present → Docker mode (zero host deps).** Builds the `af-hybrid`
+  image (AF +α **and** pyright base, all in-container) and wires
+  `.claude/settings.json` to it. No venv, no pip/npm, no plugin install — the
+  container does everything. Just `claude` and edit. Force off with
+  `-Venv` (PowerShell) / `--venv` (bash).
+- **No Docker → venv mode.** Creates `.venv`, installs deps via pip (no global
+  install), clones the base, and you add the AF plugin in-session (steps above).
+
+Verified end-to-end (Docker mode, 2026-05-21): on `scratch/try_me.py` the
+container hook returned `exit 2` with **both** AF (`monoid_identity`) and base
+(pyright `reportReturnType`) findings —
+[../../docs/_plugin_verification/docker_hybrid_hook_fire_2026-05-21.json](../../docs/_plugin_verification/docker_hybrid_hook_fire_2026-05-21.json).
+
 ## What's in here
 
 | File | Role |
 |---|---|
-| `setup_hybrid.ps1` / `.sh` | Creates `.venv` + installs `ruff`/`hypothesis`/`pyright` into it (**no global install**; pyright via pip), clones claude-code-quality-hook, writes `.claude/settings.json` (base hook, `-X utf8` for Windows) + base `.quality-hook.json` (detection-only) |
+| `setup_hybrid.ps1` / `.sh` | Auto-selects Docker vs venv mode (see above) and wires `.claude/settings.json` accordingly |
+| `docker/Dockerfile` + `docker/entrypoint.py` | The `af-hybrid` image: AF +α + pyright in one container, acting as a PostToolUse hook (host→container path translation built in) |
 | `.algebraic-filter.json` | AF config — safe defaults (`phase2_runtime: false`). Flip to `true` to enable algebraic-law runtime checking (executes the file; trusted dirs only) |
 | `scratch/try_me.py` | A sample file with **a type error + a monoid-law violation** so you can see both hooks fire immediately |
 | `.gitignore` | Ignores the cloned base + AF history |

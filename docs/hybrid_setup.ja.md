@@ -13,7 +13,20 @@
 両者は相補的: 実測で検出 defect が **重複しない** (= 型エラー vs 代数法則違反) ため、
 併用しても無駄がない。 end-to-end 検証済 ([検証](#検証) 参照)。
 
-## 前提
+> **最速 path**: [examples/hybrid-starter/](../examples/hybrid-starter/) を copy
+> して `setup_hybrid` を実行。 Docker があれば **Docker mode (host 依存ゼロ)**、
+> なければ **venv mode** を自動選択する。 以下の手順は venv mode の手動版。
+
+## Docker mode (host 依存ゼロ)
+
+host に python/node/pip を一切入れたくなければ、 雛型が AF +α **と** pyright を
+同梱した `af-hybrid` image を build し、 単一 PostToolUse hook として動かす (=
+host→container path 翻訳込み)。 Docker 検出時 `setup_hybrid` が自動配線、 host 要件
+は Docker のみ。 2026-05-21 検証: container hook が `exit 2` + AF (`monoid_identity`)
++ base (pyright `reportReturnType`) 両検出
+([_plugin_verification/docker_hybrid_hook_fire_2026-05-21.json](_plugin_verification/docker_hybrid_hook_fire_2026-05-21.json))。
+
+## 前提 (venv mode)
 
 venv を使い global 導入を避ける (= pyright は pip で入る、 global `npm` 不要):
 

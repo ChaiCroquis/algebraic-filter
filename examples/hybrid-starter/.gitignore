@@ -1,3 +1,6 @@
+# python virtual environment (created by setup_hybrid)
+.venv/
+
 # cloned base tool (fetched by setup_hybrid)
 claude-code-quality-hook/
 

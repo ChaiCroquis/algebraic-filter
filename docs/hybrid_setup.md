@@ -14,7 +14,22 @@ These are complementary: in measurement the two detect **disjoint** defects
 (type errors vs algebraic-law violations), so running both loses nothing.
 Verified end-to-end (see [Verification](#verification) below).
 
-## Prerequisites
+> **Fastest path**: copy [examples/hybrid-starter/](../examples/hybrid-starter/)
+> and run `setup_hybrid` — it auto-selects **Docker mode (zero host deps)** if
+> Docker is present, else **venv mode**. The steps below are the manual
+> equivalent of venv mode.
+
+## Docker mode (zero host dependencies)
+
+If you don't want python/node/pip on the host at all, the starter builds an
+`af-hybrid` image bundling AF +α **and** pyright, run as a single PostToolUse
+hook (host→container path translation built in). `setup_hybrid` wires it
+automatically when Docker is detected; the only host requirement is Docker.
+Verified 2026-05-21: the container hook returns `exit 2` with both AF
+(`monoid_identity`) and base (pyright `reportReturnType`) findings
+([_plugin_verification/docker_hybrid_hook_fire_2026-05-21.json](_plugin_verification/docker_hybrid_hook_fire_2026-05-21.json)).
+
+## Prerequisites (venv mode)
 
 Use a venv so nothing is installed globally (pyright is pip-installable — no
 global `npm` needed):
