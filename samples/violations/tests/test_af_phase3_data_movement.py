@@ -11,16 +11,17 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SAMPLES_DIR = REPO_ROOT / "samples" / "violations"
 sys.path.insert(0, str(REPO_ROOT))
 
-from af_phase3.runtime_checker import check_threshold, measure  # noqa: E402
-from af_phase3.static_checker import check_file  # noqa: E402
+from af_phase3.runtime_checker import check_threshold  # noqa: E402
+from af_phase3.static_checker import check_file, check_source  # noqa: E402
 
 
-def _load_module(file_name: str):
+def _load_module(file_name: str) -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         f"phase3_{file_name.replace('.py', '')}", SAMPLES_DIR / file_name
     )
@@ -62,6 +63,28 @@ def test_phase3_static_detects_string_concat_in_loop() -> None:
     violations = check_file(str(SAMPLES_DIR / "string_concat_in_loop.py"))
     rule_ids = [v.rule_id for v in violations]
     assert "string-concat-in-loop" in rule_ids, f"expected string-concat-in-loop, got {rule_ids}"
+
+
+def test_phase3_string_concat_no_fp_on_numeric_accumulator() -> None:
+    """精度: int/float accumulator を string-concat と誤検出しない。
+
+    2026-05-21 perflint 中立 corpus で float accumulator (`total = 3.14;
+    total += i`) を string-concat-in-loop と誤検出した FP の regression guard。
+    """
+    src_int = "def f():\n    total = 0\n    for i in range(10):\n        total += i\n    return total\n"
+    src_float = "def g():\n    total = 3.14\n    for i in range(10):\n        total += i * 2\n    return total\n"
+    for src in (src_int, src_float):
+        rule_ids = [v.rule_id for v in check_source(src)]
+        assert "string-concat-in-loop" not in rule_ids, f"numeric accumulator must not flag, got {rule_ids}"
+
+
+def test_phase3_string_concat_detected_via_evidence() -> None:
+    """精度: str 証跡 (literal init / f-string RHS) があれば従来通り検出。"""
+    src_literal = 's = ""\ndef h(parts):\n    out = ""\n    for p in parts:\n        out += p\n    return out\n'
+    src_fstring = "def k(parts):\n    out = 0\n    for p in parts:\n        out += f'{p}'\n    return out\n"
+    for src in (src_literal, src_fstring):
+        rule_ids = [v.rule_id for v in check_source(src)]
+        assert "string-concat-in-loop" in rule_ids, f"string evidence must flag, got {rule_ids}"
 
 
 def test_phase3_static_clean_on_fixed_intermediate() -> None:

@@ -21,14 +21,29 @@ probe you can reproduce (see [Reproduce](#reproduce)).
 
 On AF's own 46-sample corpus: full-stack detection **28/46 (61%)**.
 
-> **Neutral-corpus check (no home-field bias)**: on [QuixBugs](https://github.com/jkoppel/QuixBugs)
-> (MIT; 38 buggy classic algorithms, NOT designed around AF's defect classes),
-> AF's *differentiating* layers (Phase 2 algebraic-law + Phase 3 data-movement)
-> detect **1/38 = 3%** (only `max_sublist_sum`, via the `sum` name → monoid).
-> Measured 2026-05-21, reproducible via `scripts/eval_quixbugs.py`. The 61%→3%
-> gap is the honest point, not a defect: QuixBugs bugs are general **logic**
-> bugs, which are structurally outside AF's **structure** axis. AF is a
-> specialized structural verifier, not a general bug-catcher.
+> **Neutral-corpus check (no home-field bias)** — two external corpora, measured
+> 2026-05-21, both reproducible (see [Reproduce](#reproduce)). The honest
+> gradient by domain match:
+>
+> | Corpus | Domain match | Detection | Note |
+> |---|---|---|---|
+> | [QuixBugs](https://github.com/jkoppel/QuixBugs) (MIT, 38 algo bugs) | **out-of-domain** (logic bugs) | **1/38 = 3%** | floor — `scripts/eval_quixbugs.py` |
+> | [perflint](https://github.com/tonybaloney/perflint) (MIT, 8 fixtures) | **in-domain** (perf anti-patterns) | **2/8 = 25%** (= 2/6 = 33% of what perflint itself flags) | `scripts/eval_perflint.py` |
+> | AF's own 46 samples | home-field (co-designed) | **28/46 = 61%** | upper bound |
+>
+> 3% → 25/33% → 61% is the honest point, not a defect. QuixBugs bugs are general
+> **logic** bugs, structurally outside AF's **structure** axis (floor). perflint
+> is in-domain but a *superset* of AF's coverage — AF catches the ruff-ported
+> subset (PERF101/102/401-403) but not perflint-only categories (use-tuple,
+> loop-invariant-statement, memoryview). The home-field 61% is the co-designed
+> ceiling. AF is a specialized structural verifier, not a general bug-catcher.
+>
+> **The neutral corpus also did its de-biasing job**: perflint's `global_usage`
+> fixture (a `float` accumulator `total += i`) was a *false positive* of the
+> Phase 3 `string-concat-in-loop` rule (it matched any `x += …` in a loop with
+> no type evidence). Fixed 2026-05-21 by gating on str evidence (literal/f-string
+> init, `str()`, or `: str` annotation); regression-guarded by
+> `test_phase3_string_concat_no_fp_on_numeric_accumulator`.
 
 ## ② Extensible (reachable with work)
 
@@ -107,9 +122,11 @@ python -m pytest samples/violations/tests/   # positive-side coverage (117 passe
 python scripts/compare_competitor.py          # AF vs competitor detection (28/46 vs 7/46)
 python scripts/miss_loop.py                   # miss separation: clustered (bulk-fixable) vs hard tail ratio
 python scripts/miss_loop.py my_corpus.json    # ...on YOUR labeled corpus (escapes the built-in co-design bias)
-# neutral external corpus (no home-field bias) — 1/38 = 3% vs home-field 61%
-git clone https://github.com/jkoppel/QuixBugs C:/work/_quixbugs
-python scripts/eval_quixbugs.py C:/work/_quixbugs/python_programs
+# neutral external corpora (no home-field bias) — the honest gradient
+git clone https://github.com/jkoppel/QuixBugs C:/work/_quixbugs        # out-of-domain
+python scripts/eval_quixbugs.py C:/work/_quixbugs/python_programs      # 1/38 = 3%
+git clone https://github.com/tonybaloney/perflint C:/work/_perflint   # in-domain
+python scripts/eval_perflint.py C:/work/_perflint/tests/functional    # 2/8 = 25%
 ```
 
 See also [evidence_summary.md](evidence_summary.md) (positive evidence) and

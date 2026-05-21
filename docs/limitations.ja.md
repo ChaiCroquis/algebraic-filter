@@ -20,14 +20,28 @@ honest な実測マップ。 全行が再現可能なプローブに裏付けら
 
 AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 
-> **中立 corpus check (home-field bias なし)**: [QuixBugs](https://github.com/jkoppel/QuixBugs)
-> (MIT; 古典アルゴリズム 38 件、 各 1 行 bug、 AF の defect class を想定して
-> 作られていない) に対し、 AF の *差別化* layer (Phase 2 代数法則 + Phase 3
-> データ移動) は **1/38 = 3%** を検出 (= `max_sublist_sum` のみ、 `sum` 名 →
-> monoid 経由)。 2026-05-21 実測、 `scripts/eval_quixbugs.py` で再現可。 61%→3%
-> の gap は欠陥でなく honest な核心: QuixBugs の bug は一般 **logic** bug で、
-> AF の **structure** 軸の構造的外側。 AF は構造専用 verifier であり一般
-> bug-catcher ではない。
+> **中立 corpus check (home-field bias なし)** — 外部 corpus 2 件、 2026-05-21
+> 実測、 両者再現可 ([再現](#再現))。 domain 一致度別の honest な gradient:
+>
+> | Corpus | domain 一致 | 検出 | 備考 |
+> |---|---|---|---|
+> | [QuixBugs](https://github.com/jkoppel/QuixBugs) (MIT, algo bug 38 件) | **domain 外** (logic bug) | **1/38 = 3%** | floor — `scripts/eval_quixbugs.py` |
+> | [perflint](https://github.com/tonybaloney/perflint) (MIT, fixture 8 件) | **domain 内** (perf anti-pattern) | **2/8 = 25%** (= perflint 自身が flag する 6 件中 2/6 = 33%) | `scripts/eval_perflint.py` |
+> | AF 自前 46 sample | home-field (co-designed) | **28/46 = 61%** | 上限 |
+>
+> 3% → 25/33% → 61% が欠陥でなく honest な核心。 QuixBugs の bug は一般 **logic**
+> bug で AF の **structure** 軸の構造的外側 (floor)。 perflint は domain 内だが
+> AF coverage の *superset* — AF は ruff-ported subset (PERF101/102/401-403) を
+> 捕捉するが perflint 固有カテゴリ (use-tuple / loop-invariant-statement /
+> memoryview) は対象外。 home-field 61% は co-designed の上限。 AF は構造専用
+> verifier であり一般 bug-catcher ではない。
+>
+> **中立 corpus は de-biasing の役目も果たした**: perflint の `global_usage`
+> fixture (`float` accumulator `total += i`) は Phase 3 `string-concat-in-loop`
+> rule の *false positive* だった (= 型証跡なしに loop 内の任意 `x += …` に
+> 一致していた)。 2026-05-21 に str 証跡 (literal/f-string init・ `str()`・
+> `: str` 注釈) gate 追加で修正、 `test_phase3_string_concat_no_fp_on_numeric_accumulator`
+> で regression guard。
 
 ## ② 拡張で届く (= 作業すれば対応可)
 
@@ -99,6 +113,11 @@ python -m pytest samples/violations/tests/   # positive 側被覆 (117 passed)
 python scripts/compare_competitor.py          # AF vs competitor 検出 (28/46 vs 7/46)
 python scripts/miss_loop.py                   # miss 切り分け: clustered (一括修正可) vs hard tail 比率
 python scripts/miss_loop.py my_corpus.json    # ...任意の labeled corpus で (= 内蔵 corpus の co-design bias を回避)
+# 中立外部 corpus (home-field bias なし) — honest gradient
+git clone https://github.com/jkoppel/QuixBugs C:/work/_quixbugs        # domain 外
+python scripts/eval_quixbugs.py C:/work/_quixbugs/python_programs      # 1/38 = 3%
+git clone https://github.com/tonybaloney/perflint C:/work/_perflint   # domain 内
+python scripts/eval_perflint.py C:/work/_perflint/tests/functional    # 2/8 = 25%
 ```
 
 [evidence_summary.ja.md](evidence_summary.ja.md) (positive evidence) +
