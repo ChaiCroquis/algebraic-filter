@@ -244,6 +244,7 @@ python scripts/ab_automation_wide.py
 |---|---|
 | [docs/architecture.ja.md](docs/architecture.ja.md) | 詳細アーキテクチャ (= 二層構造 / 3 層検証パイプライン / AET-OS Verified Orchestrator Pattern Layer 3 mapping / Phase 0-5 構成) |
 | [docs/hybrid_setup.ja.md](docs/hybrid_setup.ja.md) | ハイブリッド構築手順 — base 品質ツール (claude-code-quality-hook / pyright) + AF を +α で併用、 合成検証済 |
+| [docs/limitations.ja.md](docs/limitations.ja.md) | 実測境界 — AF が できる / 拡張 / 構造的に不可 (false-negative プローブ + Phase 2 keyword 被覆 38% + 構造 vs 意図 の線引き) |
 | [docs/evidence_summary.ja.md](docs/evidence_summary.ja.md) | 検証結果集約 (= A/B 計測 +80%/+8.3% / Phase 0 H1-H4 / Phase 2 hypothesis-target 100% / Phase 3 data-movement 100% / Phase 4 統一 schema / end-to-end Claude 自己修正サイクル動作 evidence) |
 | [docs/troubleshooting.ja.md](docs/troubleshooting.ja.md) | 既知の問題 + 対策 (= Windows path mangling / Scalpel typed-ast Python 3.13 build 失敗 / memray Windows 不可 / session reload 不可 / auto-mode classifier nested block) |
 | [docs/algebraic_filter_project_plan.md](docs/algebraic_filter_project_plan.md) | プロジェクト計画書 (= 1〜13 章: 動機 / 問題 / アプローチ / scope / 5 Phase roadmap / 撤退基準 / 成功基準 / 差別化軸) |
