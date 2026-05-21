@@ -15,10 +15,16 @@
 
 ## 前提
 
+venv を使い global 導入を避ける (= pyright は pip で入る、 global `npm` 不要):
+
 ```bash
-pip install ruff hypothesis        # ruff: 両ツール / hypothesis: AF Phase 2
-npm install -g pyright             # base の型検査 edge
+python -m venv .venv
+# Windows: .\.venv\Scripts\Activate.ps1   |   macOS/Linux: source .venv/bin/activate
+pip install ruff hypothesis pyright   # ruff: 両ツール / hypothesis: AF Phase 2 / pyright: base 型検査
 ```
+
+> `claude` は **venv 有効化 shell から起動**すること (= 両 hook は bare `python`
+> を呼ぶので、 venv の依存を継承させる)。
 
 ## Step 1 — base: claude-code-quality-hook
 

@@ -16,10 +16,17 @@ Verified end-to-end (see [Verification](#verification) below).
 
 ## Prerequisites
 
+Use a venv so nothing is installed globally (pyright is pip-installable — no
+global `npm` needed):
+
 ```bash
-pip install ruff hypothesis        # ruff: both tools; hypothesis: AF Phase 2
-npm install -g pyright             # base's type-checking edge
+python -m venv .venv
+# Windows: .\.venv\Scripts\Activate.ps1   |   macOS/Linux: source .venv/bin/activate
+pip install ruff hypothesis pyright   # ruff: both tools; hypothesis: AF Phase 2; pyright: base type-check
 ```
+
+> Launch `claude` **from the activated venv** so both hooks (which call bare
+> `python`) inherit the venv's deps.
 
 ## Step 1 — base: claude-code-quality-hook
 

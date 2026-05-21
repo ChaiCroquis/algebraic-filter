@@ -15,9 +15,11 @@ else
     echo "  already present, skipping"
 fi
 
-echo "== 2/4 install deps (ruff / hypothesis / pyright) =="
-python -m pip install ruff hypothesis
-npm install -g pyright
+echo "== 2/4 venv + deps (ruff / hypothesis / pyright) — no global install =="
+[ -d "$proj/.venv" ] || python -m venv .venv
+# install into the venv directly (pyright via pip = no global npm pollution)
+"$proj/.venv/bin/python" -m pip install --upgrade pip
+"$proj/.venv/bin/python" -m pip install ruff hypothesis pyright
 
 echo "== 3/4 base config: detection + block only (AI-fix off) =="
 cat > "$proj/.quality-hook.json" <<'JSON'
@@ -48,10 +50,16 @@ JSON
 
 cat <<'NEXT'
 
-Base wired. Next (inside a Claude Code session in this folder):
-  1. claude
-  2. /plugin marketplace add ChaiCroquis/algebraic-filter
-  3. /plugin install algebraic-filter@algebraic-filter-marketplace --scope local
-  4. exit, then restart 'claude' (hooks register at session start)
-  5. ask Claude to fix scratch/try_me.py -> both hooks fire
+Base wired. Next:
+  1. Activate the venv IN THIS SHELL (so hooks inherit its python/ruff/pyright):
+       source .venv/bin/activate
+  2. Launch Claude Code FROM the activated shell:
+       claude
+  3. /plugin marketplace add ChaiCroquis/algebraic-filter
+  4. /plugin install algebraic-filter@algebraic-filter-marketplace --scope local
+  5. exit, then re-launch 'claude' from the activated venv (hooks register at start)
+  6. ask Claude to fix scratch/try_me.py -> both hooks fire
+
+Why activate first: both hooks call bare 'python' — running claude from the
+activated venv makes them use the venv deps (no global install needed).
 NEXT
