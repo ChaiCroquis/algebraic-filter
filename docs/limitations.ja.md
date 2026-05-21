@@ -24,9 +24,10 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 
 | gap | 作業量 |
 |---|---|
-| inferrer keyword 被覆 (`add` / `plus` / `total` / `mean` が現状 skip) | 小 — keyword 追記 |
+| inferrer keyword 被覆 (`mean` / `compute` / `process` が現状 skip) | 小 — keyword 追記 (`add`/`plus`/`total`/`accumulate` は追加済) |
 | 代数法則の追加 (現 13 を超えて) | 小〜中 |
 | 型検査 (pyright) | **既に対応済** — hybrid / Docker mode 経由 |
+| SMT 証明 (CrossHair) で結合/可換律 | **opt-in で対応済** (`AF_CROSSHAIR`)。 コストは **型依存 — int は ~0.3s だが str/dict/複雑型は ~8s** (= 2026-05-21 stress test 実測、 当初報告の int 限定 ~0.3s でない)。 int/float/str/dict/分岐/ループ/再帰で動作 (= 当初 claim した「binary int」 より広い)、 identity/functor/monad 法則は保留 |
 | 他言語 (TypeScript / Rust) | 大 — 別生態系。 Rust の trait system が代数軸に最適合 |
 
 ## ③ 構造的に対応不可 (= 実測 見逃し)

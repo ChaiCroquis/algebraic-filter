@@ -97,10 +97,11 @@ feedback-completeness over compute-saving). Cost is instead controlled by
 
 - **Layer 1 static** (ruff ~16 ms via the `ruff` binary + AST ~ms): always
   runs on `.py` writes (cheap; the always-on base).
-- **Layer 2 algebraic-law** (hypothesis seconds / CrossHair ~0.3 s): **opt-in**
-  (`AF_HOOK_PHASE2_PBT` / `AF_CROSSHAIR`, default OFF). Even when on, a
-  per-function pre-gate (law inferred? binary? crosshair available?) skips the
-  heavy work for irrelevant functions.
+- **Layer 2 algebraic-law** (hypothesis seconds / CrossHair **~0.3 s for int,
+  but up to ~8 s for str/dict/complex types** — measured 2026-05-21 stress
+  test, type-dependent): **opt-in** (`AF_HOOK_PHASE2_PBT` / `AF_CROSSHAIR`,
+  default OFF). Even when on, a per-function pre-gate (law inferred? binary?
+  crosshair available?) skips the heavy work for irrelevant functions.
 - **Layer 3 data-movement** (tracemalloc tens of seconds): selective.
 
 So the expensive work is minimized by pre-gating to relevant functions, not by

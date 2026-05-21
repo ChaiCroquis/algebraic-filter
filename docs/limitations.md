@@ -25,9 +25,10 @@ On AF's own 46-sample corpus: full-stack detection **28/46 (61%)**.
 
 | Gap | Effort |
 |---|---|
-| Inferrer keyword coverage (`add` / `plus` / `total` / `mean` currently skipped) | small — add keywords |
+| Inferrer keyword coverage (`mean` / `compute` / `process` currently skipped) | small — add keywords (synonyms `add`/`plus`/`total`/`accumulate` already added) |
 | More algebraic laws (beyond the current 13) | small–medium |
 | Type-checking (pyright) | **already available** via the hybrid / Docker mode |
+| SMT proof (CrossHair) of assoc/commut | **already available** opt-in (`AF_CROSSHAIR`); cost is **type-dependent — ~0.3 s for int, ~8 s for str/dict/complex** (measured 2026-05-21 stress test, not the int-only ~0.3 s first reported). Works on int/float/str/dict/branches/loops/recursion (broader than the conservative "binary int" scope first claimed); identity/functor/monad laws still deferred |
 | Other languages (TypeScript / Rust) | large — different ecosystems; Rust's trait system fits the algebra axis best |
 
 ## ③ Structurally out of scope (measured misses)
