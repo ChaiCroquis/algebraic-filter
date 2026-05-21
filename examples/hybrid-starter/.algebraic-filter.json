@@ -1,0 +1,9 @@
+{
+  "_comment": "AF config for this project. Safe defaults shown. Precedence: env var > this file > built-in default.",
+
+  "phase2_runtime": false,
+  "_phase2_runtime_doc": "true = the hook imports+executes the written .py to run algebraic-law property tests (hypothesis). Enable only in trusted/throwaway dirs like scratch/. Env override: AF_HOOK_PHASE2_PBT=1.",
+
+  "feedback_shape": "verbose",
+  "_feedback_shape_doc": "verbose | skeleton_only | minimal. Use 'minimal' if the hybrid feedback feels noisy."
+}
