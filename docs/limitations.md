@@ -50,14 +50,29 @@ recognizes**. Rename the function and the same bug passes clean.
 
 ### Phase 2 inferrer is a name heuristic, not semantic understanding
 
-Measured keyword coverage over 32 common function names: **12/32 = 38%** trigger
-law inference.
+Measured keyword coverage over 32 common function names: **16/32 = 50%**
+trigger law inference (was 12/32 = 38% before the 2026-05-21 miss-loop
+iteration2 improvement — monoid/commutativity synonyms added + word-boundary
+matching).
 
-- Recognized (✓): `sum` `merge` `concat` `combine` `union` `fold` `reduce`
-  `aggregate` `fmap` `map` `transform` `average`
-- Skipped (·): `total` `add` `plus` `join` `accumulate` `apply` `compose`
-  `mean` `max` `min` `count` `sort` `filter` `dedup` `normalize` `compute`
-  `process` `handle` `calc` `thingy` …
+- Recognized (✓): `sum` `total` `add` `plus` `accumulate` `merge` `concat`
+  `combine` `union` `fold` `reduce` `aggregate` `fmap` `map` `transform`
+  `average` (+ synonyms `tally` `gather` `collect` `blend` `mix`)
+- Still skipped (·): `join` `apply` `compose` `mean` `max` `min` `count`
+  `sort` `filter` `compute` `process` `handle` `calc` `thingy` …
+
+> **Precision fix (same change)**: matching is now **word-boundary** (token),
+> not substring. This removed pre-existing false matches measured before the
+> fix: `consume`/`summary`/`assume` → no longer matched `sum`;
+> `remap`/`transformer` → no longer matched `map`/`transform`; `combiner` →
+> no longer matched `combine`. So this iteration **raised recall (38→50%) AND
+> cut false positives** at once.
+
+> **Deferred (measured)**: idempotence synonyms (`normalize`/`canonicalize`/
+> `dedup`/`sanitize`) were NOT added — they emit `ERROR` (not clean PASS)
+> because the `idempotence` law template is not robust for arbitrary-typed
+> unary functions. Adding them would create false positives; deferred until
+> the template is hardened.
 
 Consequence — Phase 2 has **two-sided error**:
 - **false negatives**: a real law violation on a non-recognized name (e.g.

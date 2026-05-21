@@ -48,13 +48,25 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 
 ### Phase 2 inferrer は意味理解でなく名前 heuristic
 
-32 個の一般的関数名での keyword 被覆: **12/32 = 38%** が法則推論を起動。
+32 個の一般的関数名での keyword 被覆: **16/32 = 50%** が法則推論を起動
+(= 2026-05-21 miss-loop iteration2 改善で 12/32=38% から向上: monoid/可換 synonym
+追加 + word-boundary 一致)。
 
-- 認識 (✓): `sum` `merge` `concat` `combine` `union` `fold` `reduce`
-  `aggregate` `fmap` `map` `transform` `average`
-- skip (·): `total` `add` `plus` `join` `accumulate` `apply` `compose`
-  `mean` `max` `min` `count` `sort` `filter` `dedup` `normalize` `compute`
-  `process` `handle` `calc` `thingy` …
+- 認識 (✓): `sum` `total` `add` `plus` `accumulate` `merge` `concat` `combine`
+  `union` `fold` `reduce` `aggregate` `fmap` `map` `transform` `average`
+  (+ synonym `tally` `gather` `collect` `blend` `mix`)
+- なお skip (·): `join` `apply` `compose` `mean` `max` `min` `count` `sort`
+  `filter` `compute` `process` `handle` `calc` `thingy` …
+
+> **精度修正 (同一変更)**: 一致を **word-boundary (token)** に変更 (substring 廃止)。
+> 修正前に実測した誤マッチを解消: `consume`/`summary`/`assume` → `sum` 誤マッチ消滅、
+> `remap`/`transformer` → `map`/`transform` 誤マッチ消滅、 `combiner` → `combine`
+> 誤マッチ消滅。 = この iteration は **recall 向上 (38→50%) と false-positive 削減を同時達成**。
+
+> **保留 (実測)**: idempotence synonym (`normalize`/`canonicalize`/`dedup`/
+> `sanitize`) は**追加せず**。 `idempotence` 法則 template が任意型 unary に robust
+> でなく **ERROR (= clean PASS でない)** を出すため = false-positive 化。 template
+> 堅牢化まで保留。
 
 帰結 — Phase 2 は **両側エラー**:
 - **false negative**: 非認識名の真の法則違反 (例: 非結合的な `add`) を見逃す。

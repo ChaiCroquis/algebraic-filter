@@ -79,3 +79,29 @@ def test_phase2_auto_passes_on_fixed_monoid() -> None:
     assert monoid_passes, (
         f"expected monoid_identity PASS for fixed my_sum (addition), got {results}"
     )
+
+
+def _named(name: str):  # noqa: ANN202
+    ns: dict = {}
+    exec(f"def {name}(a: int, b: int) -> int:\n    return a + b", ns)  # noqa: S102
+    return ns[name]
+
+
+def test_inferrer_word_boundary_no_substring_fp() -> None:
+    """word-boundary 一致: substring の誤マッチ (consume→sum 等) を起こさない (2026-05-21)."""
+    from af_phase2.inferrer import infer_laws
+
+    for innocent in ("consume", "summary", "assume", "remap", "transformer", "combiner"):
+        assert infer_laws(_named(innocent)) == [], (
+            f"{innocent} must not substring-match a keyword"
+        )
+
+
+def test_inferrer_synonyms_infer_laws() -> None:
+    """monoid/可換 synonym (total/add/accumulate/blend) が法則推論を起動する (2026-05-21)."""
+    from af_phase2.inferrer import infer_laws
+
+    for monoid_name in ("total", "add", "plus", "accumulate", "tally"):
+        assert "monoid_associativity" in infer_laws(_named(monoid_name)), monoid_name
+    for commut_name in ("blend", "mix"):
+        assert "commutativity" in infer_laws(_named(commut_name)), commut_name
