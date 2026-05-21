@@ -88,14 +88,23 @@ Claude self-correction cycle
 | 2 Algebraic-law PBT | Monoid (2) / Functor (2) / Monad (3) / Semigroup (1) / Foldable (1) / Eq (2) / Commutativity / Idempotence (2) | `af_phase2/law_templates.py` | 13 laws |
 | 3 Data movement | allocation bytes / intermediate-list count / threshold check | `af_phase3/runtime_checker.py` | tracemalloc (Windows + Unix) |
 
-### Energy-efficiency rationale
+### Energy / cost model (as actually implemented)
 
-Cheap layers reject first:
-- Layer 1 (tens of ms): ruff + AST = filters most violations
-- Layer 2 (seconds): hypothesis = function-specific algebraic-law violations
-- Layer 3 (tens of seconds): tracemalloc = data-movement violations
+The hook does **not** short-circuit between layers (it runs all *enabled*
+layers, then aggregates so Claude gets every violation in one shot —
+feedback-completeness over compute-saving). Cost is instead controlled by
+**opt-in gating + per-function pre-gates**:
 
-Later stages cost more → catching at earlier stages saves later compute.
+- **Layer 1 static** (ruff ~16 ms via the `ruff` binary + AST ~ms): always
+  runs on `.py` writes (cheap; the always-on base).
+- **Layer 2 algebraic-law** (hypothesis seconds / CrossHair ~0.3 s): **opt-in**
+  (`AF_HOOK_PHASE2_PBT` / `AF_CROSSHAIR`, default OFF). Even when on, a
+  per-function pre-gate (law inferred? binary? crosshair available?) skips the
+  heavy work for irrelevant functions.
+- **Layer 3 data-movement** (tracemalloc tens of seconds): selective.
+
+So the expensive work is minimized by pre-gating to relevant functions, not by
+inter-layer short-circuiting.
 
 ---
 
@@ -128,7 +137,7 @@ AF's correspondence:
 ### Relationship with CrossHair / QWED
 
 CrossHair + QWED, recommended in AET-OS PDF §4.2, are the Python formal-verification standard. AF integrates them as:
-- CrossHair = `af_phase3/scalpel_bridge.py` (Phase 3 extension via Docker container)
+- **CrossHair = `af_phase2/crosshair_bridge.py`** — opt-in (`AF_CROSSHAIR`) SMT **proof** of associativity/commutativity for binary functions, auto-generating contracts from the inferred law. Deterministic; catches rare-value violations hypothesis sampling misses (verified 2026-05-21, FP-zero). Scope: binary + assoc/commut; default OFF. (`af_phase3/scalpel_bridge.py` is a separate **Scalpel** CFG bridge, not CrossHair.)
 - QWED "LLM is an untrusted translator" philosophy = AF's overall design (verify LLM generation with deterministic tools)
 
 ---

@@ -194,9 +194,10 @@ python scripts/ab_automation_wide.py
 - [hooks/posttool_af_check.py](hooks/posttool_af_check.py) — Phase 1 ruff + Phase 3 AST + Phase 4 structured feedback の 3 layer 統合
 
 ### Phase 2: 代数法則 PBT 自動生成 ([af_phase2/](af_phase2/))
-- `inferrer.py` — 関数シグネチャ → 法則 ID 推論 (12 keyword + 型 strategy 自動選択)
+- `inferrer.py` — 関数名 → 法則 ID 推論を **word-boundary token** 一致 (substring でなく) + intent synonym で実施、 型 strategy 自動選択
 - `law_templates.py` — 13 法則テンプレ (Monoid / Functor / Foldable / Monad / Semigroup / Eq / Commutativity / Idempotence)
 - `generator.py` — `auto_test()` / `auto_test_monad_pair()` / `auto_test_class_idempotence()` API
+- `crosshair_bridge.py` — **opt-in** (`AF_CROSSHAIR`/`crosshair_verify`) で binary 関数の結合/可換律を CrossHair SMT **証明** (= 決定論、 sampling が見逃す稀値違反を捕捉、 FP ゼロ実測済)。 default OFF。
 
 > **「自動生成」 の適用範囲**: 法則推論は **keyword + 型の heuristic** であって
 > 汎用 prover ではない。 関数名 / signature が既知 pattern に一致した時のみ発火
@@ -211,8 +212,21 @@ python scripts/ab_automation_wide.py
 - `scalpel_bridge.py` — Python 3.10 Docker container 経由で Scalpel CFG 解析 (= Python 3.13 typed-ast 互換問題回避)
 
 ### Phase 4: LLM 最適化フィードバック整形 ([af_phase4/](af_phase4/))
-- `feedback_formatter.py` — Phase 1 + Phase 3 violation を統一 schema (5 fields: layer / location / law / skeleton / fix_example) に整形
-- `anti_pattern_tracker.py` — JSON history persistent + 同一違反 3 回で pre-emptive hint
+- `feedback_formatter.py` — Phase 1 + Phase 2 + Phase 3 violation を統一 schema (5 fields) に整形 + shape variant (`AF_FEEDBACK_SHAPE`)
+- `anti_pattern_tracker.py` — JSON history persistent + per-rule-threshold pre-emptive hint
+- `phase2_runner.py` — opt-in hook 時 Phase 2 runner (`AF_HOOK_PHASE2_PBT` hypothesis sampling / `AF_CROSSHAIR` 証明)
+- `config.py` — switch 層: `.algebraic-filter.json` (or `AF_CONFIG_PATH`) + env override、 安全 default (= 危険/重い挙動は全て OFF)
+
+### 設定とスイッチ
+危険/重い層は全て opt-in・default OFF・1 ファイルで監査可
+([.algebraic-filter.json.example](.algebraic-filter.json.example))。 優先順位:
+**env var > `.algebraic-filter.json` > 安全 default**。
+
+| switch | env | default | 効果 |
+|---|---|---|---|
+| Phase 2 runtime (hypothesis) | `AF_HOOK_PHASE2_PBT` | OFF | 書込 module を import 実行し推論法則を property test |
+| CrossHair proof | `AF_CROSSHAIR` | OFF | binary 関数の結合/可換律を SMT 証明 (決定論) |
+| feedback shape | `AF_FEEDBACK_SHAPE` | `verbose` | `verbose` / `skeleton_only` / `minimal` |
 
 ### Sample / Test 集 ([samples/violations/](samples/violations/))
 - 46 違反サンプル + 46 ground truth + [manifest.json](samples/violations/manifest.json) (= 仕様層、 各 sample の expected_detection / what_to_verify / what_is_the_problem / expected_fix を articulate)

@@ -202,9 +202,10 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 - [hooks/posttool_af_check.py](hooks/posttool_af_check.py) — 3-layer integration: Phase 1 ruff + Phase 3 AST + Phase 4 structured feedback
 
 ### Phase 2: Algebraic-law PBT auto-generation ([af_phase2/](af_phase2/))
-- `inferrer.py` — Function signature → law ID inference (12 keywords + type-strategy auto-selection)
+- `inferrer.py` — Function name → law ID inference via **word-boundary token** match (not substring) + intent synonyms; type-strategy auto-selection
 - `law_templates.py` — 13 law templates (Monoid / Functor / Foldable / Monad / Semigroup / Eq / Commutativity / Idempotence)
 - `generator.py` — `auto_test()` / `auto_test_monad_pair()` / `auto_test_class_idempotence()` APIs
+- `crosshair_bridge.py` — **opt-in** (`AF_CROSSHAIR`/`crosshair_verify`) CrossHair SMT **proof** of associativity/commutativity for binary functions (deterministic; catches rare-value violations sampling misses, FP-zero — measured). Default OFF.
 
 > **Scope of "auto-generation"**: law inference is a **keyword + type heuristic**,
 > not a general prover. It fires only when a function's name/signature matches a
@@ -219,8 +220,21 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 - `scalpel_bridge.py` — Scalpel CFG analysis via Python 3.10 Docker container (workaround for typed-ast Python 3.13 incompatibility)
 
 ### Phase 4: LLM-optimized feedback formatting ([af_phase4/](af_phase4/))
-- `feedback_formatter.py` — Unifies Phase 1 + Phase 3 violations into a 5-field schema (layer / location / law / skeleton / fix_example)
-- `anti_pattern_tracker.py` — JSON history persistence + pre-emptive hint on 3rd violation of same rule
+- `feedback_formatter.py` — Unifies Phase 1 + Phase 2 + Phase 3 violations into a 5-field schema (layer / location / law / skeleton / fix_example); shape variants (`AF_FEEDBACK_SHAPE`)
+- `anti_pattern_tracker.py` — JSON history persistence + per-rule-threshold pre-emptive hint
+- `phase2_runner.py` — opt-in hook-time Phase 2 runner (`AF_HOOK_PHASE2_PBT` hypothesis sampling and/or `AF_CROSSHAIR` proof)
+- `config.py` — switch layer: `.algebraic-filter.json` (or `AF_CONFIG_PATH`) with env override; safe defaults (all risky/heavy behavior OFF)
+
+### Config & switches
+All risky/heavy layers are opt-in, default OFF, auditable in one file
+([.algebraic-filter.json.example](.algebraic-filter.json.example)). Precedence:
+**env var > `.algebraic-filter.json` > safe default**.
+
+| Switch | Env | Default | Effect |
+|---|---|---|---|
+| Phase 2 runtime (hypothesis) | `AF_HOOK_PHASE2_PBT` | OFF | import + execute the written module to property-test inferred laws |
+| CrossHair proof | `AF_CROSSHAIR` | OFF | SMT-prove assoc/commut of binary functions (deterministic) |
+| Feedback shape | `AF_FEEDBACK_SHAPE` | `verbose` | `verbose` / `skeleton_only` / `minimal` |
 
 ### Sample / Test corpus ([samples/violations/](samples/violations/))
 - 46 violation samples + 46 ground-truth fixes + [manifest.json](samples/violations/manifest.json) (specification layer with expected_detection / what_to_verify / what_is_the_problem / expected_fix for each sample)

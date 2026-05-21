@@ -83,14 +83,19 @@ Claude 自己修正サイクル
 | 2 代数法則 PBT | Monoid (2) / Functor (2) / Monad (3) / Semigroup (1) / Foldable (1) / Eq (2) / Commutativity / Idempotence (2) | `af_phase2/law_templates.py` | 13 法則 |
 | 3 データ移動量 | allocation byte / 中間 list 数 / 閾値判定 | `af_phase3/runtime_checker.py` | tracemalloc (Windows + Unix) |
 
-### エネルギー効率の articulate
+### エネルギー / コストモデル (= 実装の実態)
 
-軽い層で弾けるものは軽い層で弾く設計:
-- Layer 1 (数十 ms): ruff + AST = 大半の違反を弾く
-- Layer 2 (数秒): hypothesis = 関数固有の代数法則違反
-- Layer 3 (数十秒): tracemalloc = データ移動量
+hook は層間で **short-circuit しない** (= 全 *enabled* 層を走らせて集約 = Claude が
+全違反を一度に受け取る feedback 完全性を、 compute 節約より優先)。 コストは代わりに
+**opt-in gating + 関数別 pre-gate** で制御:
 
-後段ほどコスト高 → 前段で弾けば後段の cost 節約。
+- **Layer 1 静的** (ruff ~16ms (binary 経由) + AST ~ms): `.py` なら常時 (= 安価な常設 base)
+- **Layer 2 代数法則** (hypothesis 数秒 / CrossHair ~0.3s): **opt-in**
+  (`AF_HOOK_PHASE2_PBT` / `AF_CROSSHAIR`、 default OFF)。 ON でも関数別 pre-gate
+  (法則推論あり? binary? crosshair 利用可?) で無関係関数の重い処理を skip。
+- **Layer 3 データ移動量** (tracemalloc 数十秒): 選択的。
+
+→ 重い処理は層間 short-circuit でなく **関係関数への pre-gate で最小化**。
 
 ---
 
@@ -123,7 +128,7 @@ AF の対応:
 ### CrossHair / QWED との関係
 
 AET-OS PDF §4.2 で推奨される CrossHair + QWED は Python 形式検証の standard。 AF は:
-- CrossHair = `af_phase3/scalpel_bridge.py` で Docker container 経由統合 (Phase 3 拡張)
+- **CrossHair = `af_phase2/crosshair_bridge.py`** — opt-in (`AF_CROSSHAIR`) で binary 関数の結合/可換律を SMT **証明** (= 推論法則から契約自動生成)。 決定論、 sampling が見逃す稀値違反を捕捉 (2026-05-21 検証、 FP ゼロ)。 適用範囲: binary + 結合/可換、 default OFF。 (`af_phase3/scalpel_bridge.py` は別物の **Scalpel** CFG bridge であり CrossHair ではない)
 - QWED 「LLM は信頼できない翻訳者」 哲学 = AF 全体の設計思想 (= LLM 生成を決定論ツールで検証)
 
 ---
