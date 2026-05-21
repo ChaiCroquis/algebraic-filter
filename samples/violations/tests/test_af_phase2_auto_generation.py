@@ -105,3 +105,33 @@ def test_inferrer_synonyms_infer_laws() -> None:
         assert "monoid_associativity" in infer_laws(_named(monoid_name)), monoid_name
     for commut_name in ("blend", "mix"):
         assert "commutativity" in infer_laws(_named(commut_name)), commut_name
+
+
+def test_phase2_name_gate_property() -> None:
+    """neutral mutation benchmark の核 invariant の高速 regression (2026-05-21).
+
+    検出は名前 heuristic に gate される: 同一の defect body でも、 認識名なら
+    検出・非認識名なら素通り。 正しい実装は flag されない。 完全版は
+    scripts/eval_algebra_mutants.py (recognized 100% / control 0% / FP-by-intent)。
+    """
+    def total(xs: list[int]) -> int:  # recognized monoid name, broken (subtraction)
+        acc = 0
+        for x in xs:
+            acc = acc - x
+        return acc
+
+    def thingy(xs: list[int]) -> int:  # unrecognized name, IDENTICAL bug
+        acc = 0
+        for x in xs:
+            acc = acc - x
+        return acc
+
+    def total_ok(xs: list[int]) -> int:  # recognized name, correct
+        return sum(xs)
+
+    rec_fails = [r for r in auto_test(total) if r.status in ("FAIL", "ERROR")]
+    ctrl_fails = [r for r in auto_test(thingy) if r.status in ("FAIL", "ERROR")]
+    ok_fails = [r for r in auto_test(total_ok) if r.status in ("FAIL", "ERROR")]
+    assert rec_fails, "recognized-name broken monoid must be flagged"
+    assert not ctrl_fails, "identical bug under unrecognized name must pass clean (name-gate)"
+    assert not ok_fails, "correct sum under recognized name must not be flagged"

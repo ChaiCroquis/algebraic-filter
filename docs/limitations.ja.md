@@ -97,6 +97,26 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 - **false positive**: 正しく `merge` と名付けたが意図的に非可換 (= 左優先 merge) な
   関数を誤検出しうる。
 
+> **中立 mutation benchmark (home-field bias なし)、 2026-05-21 実測** —
+> `scripts/eval_algebra_mutants.py`。 「algebra 名の関数が法則違反している」公開
+> corpus は存在しない (調査で確認) ため、 *機械的 mutation* benchmark とした:
+> canonical 演算 (`return a + b` 等) に標準 AOR mutation を適用、 独立な決定論
+> oracle + name-gate control 群で評価。 結果 (`sampling` と `sampling+crosshair`
+> で同一):
+>
+> | 測定 | 結果 | 読み |
+> |---|---|---|
+> | 認識名での検出 (oracle 確定の defect) | **7/7 = 100%** | niche 内では精密かつ完全 |
+> | 正解 mutant への false-positive (認識名) | **0/8 = 0%** | 正しいコードを過剰 flag しない |
+> | name-gate **control** での検出 (同一 bug・非認識名) | **0/7 = 0%** | 同じ defect も改名で素通り |
+> | **name-gate 効果** | **100 pts** | Phase 2 の検出は *全て* 名前依存 |
+> | FP-by-intent (意図的に非可換な `merge`) | **2/2 flag** | false-positive 側を定量化 |
+>
+> honest な要約: Phase 2 は **精密だが完全に名前 gate された** verifier。 認識
+> niche 内では機械的 mutant に対し 100%/0% (検出/FP)、 niche 外 (改名 or 設計上
+> 意図的な法則破り) では構造的に盲目 or 誤り。 これは QuixBugs 3% floor の代数法則
+> 版 — 能力は実在するが niche 限定。 `test_phase2_name_gate_property` で guard。
+
 ## honest な要点
 
 AF の価値は **自動の構造ガードレール**。 仕様/意図の正しさは test・人間 review・
@@ -118,6 +138,8 @@ git clone https://github.com/jkoppel/QuixBugs C:/work/_quixbugs        # domain 
 python scripts/eval_quixbugs.py C:/work/_quixbugs/python_programs      # 1/38 = 3%
 git clone https://github.com/tonybaloney/perflint C:/work/_perflint   # domain 内
 python scripts/eval_perflint.py C:/work/_perflint/tests/functional    # 2/8 = 25%
+# 代数法則軸: 中立 機械的 mutation benchmark (外部 clone 不要)
+AF_HOOK_PHASE2_PBT=1 python scripts/eval_algebra_mutants.py           # recognized 100% / control 0%
 ```
 
 [evidence_summary.ja.md](evidence_summary.ja.md) (positive evidence) +

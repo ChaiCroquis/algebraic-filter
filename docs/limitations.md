@@ -105,6 +105,28 @@ Consequence — Phase 2 has **two-sided error**:
 - **false positives**: a function correctly named `merge` but intentionally
   *not* commutative (e.g. left-biased merge) would be flagged.
 
+> **Neutral mutation benchmark (no home-field bias), measured 2026-05-21** via
+> `scripts/eval_algebra_mutants.py`. No public corpus of "named functions that
+> violate algebraic laws" exists (survey confirmed), so this is a *mechanical
+> mutation* benchmark: canonical operations (`return a + b` etc.) under standard
+> AOR mutation, with an independent deterministic oracle and a name-gate control
+> group. Result (identical under `sampling` and `sampling+crosshair`):
+>
+> | Measure | Result | Reading |
+> |---|---|---|
+> | Detection on recognized names (oracle-confirmed defects) | **7/7 = 100%** | precise + complete *within* the niche |
+> | False positives on still-correct mutants (recognized) | **0/8 = 0%** | does not over-flag correct code |
+> | Detection on name-gate **control** (identical bugs, unrecognized names) | **0/7 = 0%** | the same defect renamed passes clean |
+> | **Name-gate effect** | **100 pts** | *all* of Phase 2's detection is name-dependent |
+> | FP-by-intent (legitimately non-commutative `merge`) | **2/2 flagged** | the false-positive arm, quantified |
+>
+> The honest summary: Phase 2 is a **precise but entirely name-gated** verifier.
+> Inside the recognized niche it is 100%/0% (catch/FP) on mechanical mutants;
+> outside it (renamed, or legitimately law-breaking by design) it is structurally
+> blind or wrong. This is the algebraic-law analogue of the QuixBugs 3% floor:
+> capability is real but niche-bounded. Guarded by
+> `test_phase2_name_gate_property`.
+
 ## The honest takeaway
 
 AF's value is **automatic structural guardrails**; spec/intent correctness
@@ -127,6 +149,8 @@ git clone https://github.com/jkoppel/QuixBugs C:/work/_quixbugs        # out-of-
 python scripts/eval_quixbugs.py C:/work/_quixbugs/python_programs      # 1/38 = 3%
 git clone https://github.com/tonybaloney/perflint C:/work/_perflint   # in-domain
 python scripts/eval_perflint.py C:/work/_perflint/tests/functional    # 2/8 = 25%
+# algebraic-law axis: neutral mechanical mutation benchmark (no external clone)
+AF_HOOK_PHASE2_PBT=1 python scripts/eval_algebra_mutants.py           # recognized 100% / control 0%
 ```
 
 See also [evidence_summary.md](evidence_summary.md) (positive evidence) and
