@@ -21,6 +21,15 @@ probe you can reproduce (see [Reproduce](#reproduce)).
 
 On AF's own 46-sample corpus: full-stack detection **28/46 (61%)**.
 
+> **Neutral-corpus check (no home-field bias)**: on [QuixBugs](https://github.com/jkoppel/QuixBugs)
+> (MIT; 38 buggy classic algorithms, NOT designed around AF's defect classes),
+> AF's *differentiating* layers (Phase 2 algebraic-law + Phase 3 data-movement)
+> detect **1/38 = 3%** (only `max_sublist_sum`, via the `sum` name → monoid).
+> Measured 2026-05-21, reproducible via `scripts/eval_quixbugs.py`. The 61%→3%
+> gap is the honest point, not a defect: QuixBugs bugs are general **logic**
+> bugs, which are structurally outside AF's **structure** axis. AF is a
+> specialized structural verifier, not a general bug-catcher.
+
 ## ② Extensible (reachable with work)
 
 | Gap | Effort |
@@ -98,6 +107,9 @@ python -m pytest samples/violations/tests/   # positive-side coverage (117 passe
 python scripts/compare_competitor.py          # AF vs competitor detection (28/46 vs 7/46)
 python scripts/miss_loop.py                   # miss separation: clustered (bulk-fixable) vs hard tail ratio
 python scripts/miss_loop.py my_corpus.json    # ...on YOUR labeled corpus (escapes the built-in co-design bias)
+# neutral external corpus (no home-field bias) — 1/38 = 3% vs home-field 61%
+git clone https://github.com/jkoppel/QuixBugs C:/work/_quixbugs
+python scripts/eval_quixbugs.py C:/work/_quixbugs/python_programs
 ```
 
 See also [evidence_summary.md](evidence_summary.md) (positive evidence) and

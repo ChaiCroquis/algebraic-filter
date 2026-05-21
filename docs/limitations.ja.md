@@ -20,6 +20,15 @@ honest な実測マップ。 全行が再現可能なプローブに裏付けら
 
 AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 
+> **中立 corpus check (home-field bias なし)**: [QuixBugs](https://github.com/jkoppel/QuixBugs)
+> (MIT; 古典アルゴリズム 38 件、 各 1 行 bug、 AF の defect class を想定して
+> 作られていない) に対し、 AF の *差別化* layer (Phase 2 代数法則 + Phase 3
+> データ移動) は **1/38 = 3%** を検出 (= `max_sublist_sum` のみ、 `sum` 名 →
+> monoid 経由)。 2026-05-21 実測、 `scripts/eval_quixbugs.py` で再現可。 61%→3%
+> の gap は欠陥でなく honest な核心: QuixBugs の bug は一般 **logic** bug で、
+> AF の **structure** 軸の構造的外側。 AF は構造専用 verifier であり一般
+> bug-catcher ではない。
+
 ## ② 拡張で届く (= 作業すれば対応可)
 
 | gap | 作業量 |
