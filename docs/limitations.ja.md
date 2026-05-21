@@ -85,8 +85,10 @@ AF は構造軸を niche 内で確実に守り、 それ以外は適切な tool 
 # false-negative プローブ (= AF の defect class 外の buggy コード)
 # inferrer keyword 被覆
 # 両者 2026-05-21 に inline 実行 (プローブ code は本 commit message に記録)
-python -m pytest samples/violations/tests/   # positive 側被覆 (106 passed / 4 skipped)
+python -m pytest samples/violations/tests/   # positive 側被覆 (117 passed)
 python scripts/compare_competitor.py          # AF vs competitor 検出 (28/46 vs 7/46)
+python scripts/miss_loop.py                   # miss 切り分け: clustered (一括修正可) vs hard tail 比率
+python scripts/miss_loop.py my_corpus.json    # ...任意の labeled corpus で (= 内蔵 corpus の co-design bias を回避)
 ```
 
 [evidence_summary.ja.md](evidence_summary.ja.md) (positive evidence) +

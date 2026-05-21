@@ -93,8 +93,10 @@ axis well within its niche, and routes everything else to the appropriate tool.
 # false-negative probes (buggy code outside AF's defect classes)
 # inferrer keyword coverage
 # both were run inline 2026-05-21; the exact probe code is in this commit message
-python -m pytest samples/violations/tests/   # the positive-side coverage (106 passed / 4 skipped)
+python -m pytest samples/violations/tests/   # positive-side coverage (117 passed)
 python scripts/compare_competitor.py          # AF vs competitor detection (28/46 vs 7/46)
+python scripts/miss_loop.py                   # miss separation: clustered (bulk-fixable) vs hard tail ratio
+python scripts/miss_loop.py my_corpus.json    # ...on YOUR labeled corpus (escapes the built-in co-design bias)
 ```
 
 See also [evidence_summary.md](evidence_summary.md) (positive evidence) and
