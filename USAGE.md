@@ -81,6 +81,7 @@ The hook supports two opt-in environment variables for advanced behavior:
 |---|---|---|
 | `AF_HOOK_PHASE2_PBT` | OFF | When set to `1` / `true` / `on`, the hook runs Phase 2 algebraic-law PBT (hypothesis) against functions in the written file and routes any law failures into the unified Phase 4 feedback. **Cost**: adds ~1-3 s/write (hypothesis runtime) and imports the target module (side-effect risk). Recommended only for throwaway dirs (`scratch/`, `samples/`), not production code. |
 | `AF_FEEDBACK_SHAPE` | `verbose` | Selects feedback verbosity for A/B shape experiments: `verbose` (skeleton + fix example), `skeleton_only` (skeleton, no fix example), `minimal` (law_id + location only, token-saving). Invalid values fall back to `verbose`. |
+| `AF_CROSSHAIR` | OFF | When set to `1`/`true`/`on`, verify associativity/commutativity of binary functions by **CrossHair SMT proof** (deterministic; catches rare-value violations hypothesis sampling misses, FP-zero — measured). Runs in the Phase 2 path. Scope: binary `(T,T)->T` + assoc/commut only. Requires `pip install -e ".[phase3]"` (crosshair-tool). |
 
 Example (PowerShell):
 

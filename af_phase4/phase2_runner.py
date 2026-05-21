@@ -55,8 +55,18 @@ def collect_phase2_failures(file_path: str) -> list[dict[str, Any]]:
     が期待する schema と一致:
         {law_id, function_name, line, counter_example}
     """
-    if not is_enabled():
+    try:
+        from af_phase2.crosshair_bridge import is_enabled as _ch_enabled
+        from af_phase2.crosshair_bridge import verify as _ch_verify
+    except Exception:
+        _ch_enabled = None  # type: ignore
+        _ch_verify = None  # type: ignore
+    crosshair_on = bool(_ch_enabled and _ch_enabled())
+
+    # phase2 sampling (= hypothesis) または crosshair proof のいずれかが ON なら走る
+    if not is_enabled() and not crosshair_on:
         return []
+    run_sampling = is_enabled()
 
     path = Path(file_path)
     if not path.exists() or path.suffix != ".py":
@@ -95,21 +105,38 @@ def collect_phase2_failures(file_path: str) -> list[dict[str, Any]]:
                 continue
             if not laws:
                 continue
-            # auto_test を走らせ FAIL/ERROR を抽出
-            try:
-                results = auto_test(obj)
-            except Exception:
-                continue
-            failures.extend(
-                {
-                    "law_id": r.law_id,
-                    "function_name": name,
-                    "line": _get_function_line(obj),
-                    "counter_example": (r.error or "")[:120],
-                }
-                for r in results
-                if r.status in ("FAIL", "ERROR")
-            )
+            line = _get_function_line(obj)
+            # (a) hypothesis sampling (phase2_runtime ON 時)
+            if run_sampling:
+                try:
+                    results = auto_test(obj)
+                except Exception:
+                    results = []
+                failures.extend(
+                    {
+                        "law_id": r.law_id,
+                        "function_name": name,
+                        "line": line,
+                        "counter_example": (r.error or "")[:120],
+                    }
+                    for r in results
+                    if r.status in ("FAIL", "ERROR")
+                )
+            # (b) CrossHair proof (crosshair_verify ON 時) = sampling 超えの決定論検証
+            if crosshair_on and _ch_verify is not None:
+                try:
+                    ch = _ch_verify(obj)
+                except Exception:
+                    ch = []
+                failures.extend(
+                    {
+                        "law_id": v["law_id"],
+                        "function_name": name,
+                        "line": line,
+                        "counter_example": f"[CrossHair] {v.get('counterexample', '')}"[:120],
+                    }
+                    for v in ch
+                )
     finally:
         # sandbox module を sys.modules から removal (= memory hygiene)
         sys.modules.pop(f"_af_phase2_target_{path.stem}", None)

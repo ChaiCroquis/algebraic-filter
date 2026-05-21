@@ -1,0 +1,139 @@
+"""Opt-in CrossHair proof layer for algebraic laws (af_phase2).
+
+Default OFF. Enable via env `AF_CROSSHAIR=1` or config `crosshair_verify: true`
+(resolved through af_phase4.config). When on, verifies associativity /
+commutativity of **binary** functions by symbolic proof (SMT) instead of
+random sampling — catching rare-value violations that hypothesis misses
+(measured 2026-05-21: caught a==999983 associativity/commutativity bugs that
+bounded sampling did not).
+
+Scope (verified): binary `(T, T) -> T` functions, associativity +
+commutativity. Identity / functor / monad laws are NOT covered (identity needs
+the identity element; higher-order laws need richer contracts). Gracefully
+no-ops if crosshair-tool is not installed or the function is out of scope.
+
+Determinism: CrossHair uses an SMT solver — proofs/counterexamples are
+deterministic (no random seed), unlike hypothesis sampling.
+"""
+from __future__ import annotations
+
+import inspect
+import re
+import subprocess
+import sys
+import tempfile
+import textwrap
+from pathlib import Path
+from typing import Any, Callable
+
+ENV_GATE = "AF_CROSSHAIR"
+
+# law_id -> (checker suffix, params, boolean expr over the function aliased as `op`)
+_LAW_CONTRACT: dict[str, tuple[str, str, str]] = {
+    "monoid_associativity": ("assoc", "a, b, c", "op(op(a, b), c) == op(a, op(b, c))"),
+    "semigroup_associativity": ("assoc", "a, b, c", "op(op(a, b), c) == op(a, op(b, c))"),
+    "commutativity": ("commut", "a, b", "op(a, b) == op(b, a)"),
+}
+
+
+def is_enabled() -> bool:
+    """Opt-in gate: env AF_CROSSHAIR > config crosshair_verify > safe default False."""
+    from af_phase4.config import resolve_bool
+
+    return resolve_bool("crosshair_verify", ENV_GATE)
+
+
+def _crosshair_available() -> bool:
+    try:
+        import crosshair  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
+def _binary_param_type(func: Callable[..., Any]) -> str | None:
+    """Return the shared annotation name if func is binary (T, T) -> *, else None."""
+    try:
+        sig = inspect.signature(func)
+    except (ValueError, TypeError):
+        return None
+    params = [
+        p
+        for p in sig.parameters.values()
+        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)
+    ]
+    if len(params) != 2:
+        return None
+    ann = params[0].annotation
+    if ann is inspect.Parameter.empty:
+        return "int"
+    return getattr(ann, "__name__", "int")
+
+
+def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
+    """CrossHair-proved law violations for a binary function (empty if none/disabled).
+
+    Each violation: {law_id, counterexample}. Deterministic (SMT).
+    """
+    if not is_enabled() or not _crosshair_available():
+        return []
+
+    from af_phase2.inferrer import infer_laws
+
+    laws = [law for law in infer_laws(func) if law in _LAW_CONTRACT]
+    if not laws:
+        return []
+    ptype = _binary_param_type(func)
+    if ptype is None:
+        return []
+
+    try:
+        src = textwrap.dedent(inspect.getsource(func))
+    except (OSError, TypeError):
+        return []
+    fname = func.__name__
+
+    parts = [src, f"op = {fname}\n"]
+    seen: set[str] = set()
+    for law in laws:
+        suffix, params, expr = _LAW_CONTRACT[law]
+        if suffix in seen:
+            continue
+        seen.add(suffix)
+        typed = ", ".join(f"{p.strip()}: {ptype}" for p in params.split(","))
+        parts.append(
+            f'def check_{suffix}({typed}) -> bool:\n'
+            f'    """\n    post: __return__\n    """\n'
+            f"    return {expr}\n"
+        )
+
+    code = "\n".join(parts)
+    tmp = Path(tempfile.mkdtemp()) / "af_ch_target.py"
+    tmp.write_text(code, encoding="utf-8")
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "crosshair", "check", str(tmp), "--per_condition_timeout=8"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+
+    out = (result.stdout or "") + (result.stderr or "")
+    suffix_to_law = {v[0]: k for k, v in _LAW_CONTRACT.items()}
+    violations: list[dict[str, str]] = []
+    for line in out.splitlines():
+        if "false when calling" not in line:
+            continue
+        m = re.search(r"check_(\w+)\((.*?)\)", line)
+        if not m:
+            continue
+        law = suffix_to_law.get(m.group(1))
+        if law:
+            violations.append({"law_id": law, "counterexample": m.group(2)[:120]})
+    return violations

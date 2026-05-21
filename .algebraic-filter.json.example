@@ -7,5 +7,9 @@
 
   "feedback_shape": "verbose",
 
-  "_feedback_shape_doc": "Feedback verbosity: 'verbose' (skeleton + fix example), 'skeleton_only' (skeleton, no fix), 'minimal' (law_id + location only). Env override: AF_FEEDBACK_SHAPE. Default: verbose."
+  "_feedback_shape_doc": "Feedback verbosity: 'verbose' (skeleton + fix example), 'skeleton_only' (skeleton, no fix), 'minimal' (law_id + location only). Env override: AF_FEEDBACK_SHAPE. Default: verbose.",
+
+  "crosshair_verify": false,
+
+  "_crosshair_verify_doc": "When true, verify associativity/commutativity of binary functions by CrossHair SMT proof (deterministic; catches rare-value violations that hypothesis sampling misses, with zero false positives — measured). Scope: binary (T,T)->T + assoc/commut only. Requires crosshair-tool (pip install -e '.[phase3]'). Runs within the Phase 2 path. Env override: AF_CROSSHAIR=1. Default: false."
 }

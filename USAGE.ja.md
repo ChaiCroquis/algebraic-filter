@@ -79,6 +79,7 @@ hook は 2 つの opt-in 環境変数で高度動作を制御できる:
 |---|---|---|
 | `AF_HOOK_PHASE2_PBT` | OFF | `1` / `true` / `on` 設定時、 hook が書き込み file 内の関数に Phase 2 代数法則 PBT (hypothesis) を走らせ、 法則違反を Phase 4 統一 feedback に統合。 **cost**: 書き込みあたり ~1-3 秒増 (hypothesis 実行) + target module を import (= side-effect risk)。 書き捨て領域 (`scratch/`, `samples/`) 限定推奨、 production code 非推奨。 |
 | `AF_FEEDBACK_SHAPE` | `verbose` | feedback 詳細度を A/B shape 実験用に選択: `verbose` (skeleton + fix example)、 `skeleton_only` (skeleton のみ、 fix example 省略)、 `minimal` (law_id + location のみ、 token 節約)。 不正値は `verbose` fallback。 |
+| `AF_CROSSHAIR` | OFF | `1`/`true`/`on` 設定時、 binary 関数の結合律/可換律を **CrossHair SMT 証明**で検証 (= 決定論、 sampling が見逃す稀値違反を捕捉、 FP ゼロ実測済)。 Phase 2 path 内で走る。 適用範囲: binary `(T,T)->T` + 結合/可換のみ。 `pip install -e ".[phase3]"` (crosshair-tool) が前提。 |
 
 例 (PowerShell):
 

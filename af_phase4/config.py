@@ -28,6 +28,7 @@ CONFIG_FILENAME = ".algebraic-filter.json"
 _SAFE_DEFAULTS: dict[str, Any] = {
     "phase2_runtime": False,
     "feedback_shape": "verbose",
+    "crosshair_verify": False,
 }
 
 _TRUE_TOKENS = ("1", "true", "on", "yes")

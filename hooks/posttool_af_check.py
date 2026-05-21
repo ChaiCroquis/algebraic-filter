@@ -51,13 +51,9 @@ except Exception:
     _phase4_shape = None  # type: ignore
 
 try:
-    from af_phase4.phase2_runner import (  # type: ignore
-        collect_phase2_failures as _phase2_collect,
-        is_enabled as _phase2_enabled,
-    )
+    from af_phase4.phase2_runner import collect_phase2_failures as _phase2_collect  # type: ignore
 except Exception:
     _phase2_collect = None  # type: ignore
-    _phase2_enabled = None  # type: ignore
 
 
 # RUF013 (implicit-optional) を追加 = competitor (pyright) との比較実測で判明した
@@ -113,10 +109,10 @@ def _run_phase3(file_path: str) -> list:
 
 
 def _run_phase2(file_path: str) -> list:
-    """Phase 2 PBT runner (opt-in via env var AF_HOOK_PHASE2_PBT)."""
-    if _phase2_collect is None or _phase2_enabled is None:
-        return []
-    if not _phase2_enabled():
+    """Phase 2 runner: hypothesis sampling (AF_HOOK_PHASE2_PBT) and/or CrossHair
+    proof (AF_CROSSHAIR). collect_phase2_failures() gates internally on either
+    switch, so just delegate (it returns [] when both are off)."""
+    if _phase2_collect is None:
         return []
     try:
         return _phase2_collect(file_path)

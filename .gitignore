@@ -60,3 +60,6 @@ hooks/af_violation_history.json
 
 # Optional: Phase 1+ samples (= 公開対象、 ただし fixed/ 配下の auto-generated は再生成可)
 # (samples/ 自体は公開、 fixed/ も公開、 ただし scratch/ のみ除外)
+
+# AF live config (local; .example is committed)
+.algebraic-filter.json
