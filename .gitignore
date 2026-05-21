@@ -39,6 +39,9 @@ Thumbs.db
 # AF プロジェクト固有
 # A/B 計測 throwaway file (= scratch/ は試験 fixture、 永続化対象外)
 scratch/
+# 例外: hybrid-starter 雛型の sample は track する (= 利用者が試す demo file)
+!examples/hybrid-starter/scratch/
+!examples/hybrid-starter/scratch/try_me.py
 
 # A/B log file (= run-specific、 公開 repo に含めない選択)
 docs/_ab_measurement/log_auto_*.json
