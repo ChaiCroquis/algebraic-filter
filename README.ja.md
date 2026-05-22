@@ -8,6 +8,11 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/ChaiCroquis/algebraic-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/ChaiCroquis/algebraic-filter/actions/workflows/ci.yml)
 
+> **何のために在るか?** → [docs/philosophy.ja.md](docs/philosophy.ja.md): AI の
+> コードは確率論。 AF はその海から *決定論的に保証された島* を切り出し、 人間の
+> レビュー面を縮小する。 理想は大きく、 現実は誠実に — 理想は大きいが、 今日の島は
+> 小さく、 そして実在する。
+
 ## 概要
 
 AI 生成コードには `pass@1` 評価では見えない代数構造レベルの欠陥 (= 純粋性違反 / 結合律破綻 / データ移動量過剰 / etc.) が潜在しうる。 algebraic-filter (AF) は Claude Code の **PostToolUse hook** で Write/Edit を後段検証し、 違反時に `exit code 2 + 構造化 feedback` で Claude に **自己修正サイクル** を起動する。
@@ -265,6 +270,7 @@ python scripts/ab_automation_wide.py
 
 | 文書 | 内容 |
 |---|---|
+| [docs/philosophy.ja.md](docs/philosophy.ja.md) | AF は何のために在るか — 決定論の島 thesis、 理想、 そして誠実な現在地 |
 | [docs/architecture.ja.md](docs/architecture.ja.md) | 詳細アーキテクチャ (= 二層構造 / 3 層検証パイプライン / AET-OS Verified Orchestrator Pattern Layer 3 mapping / Phase 0-5 構成) |
 | [docs/hybrid_setup.ja.md](docs/hybrid_setup.ja.md) | ハイブリッド構築手順 — base 品質ツール (claude-code-quality-hook / pyright) + AF を +α で併用、 合成検証済 |
 | [docs/limitations.ja.md](docs/limitations.ja.md) | 実測境界 — AF が できる / 拡張 / 構造的に不可 (false-negative プローブ + Phase 2 keyword 被覆 38% + 構造 vs 意図 の線引き) |

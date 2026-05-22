@@ -8,6 +8,11 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/ChaiCroquis/algebraic-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/ChaiCroquis/algebraic-filter/actions/workflows/ci.yml)
 
+> **Why does this exist?** → [docs/philosophy.md](docs/philosophy.md): AI code is
+> probabilistic; AF carves a *deterministically-guaranteed island* out of that
+> ocean, shrinking the human review surface. Aim high, stay honest — the ideal is
+> large, today's island is small but real.
+
 ## Overview
 
 AI-generated code can contain algebraic structural defects (purity violations, broken associativity, excessive data movement, etc.) that are invisible to `pass@1` evaluation. algebraic-filter (AF) post-validates `Write`/`Edit` via Claude Code's **PostToolUse hook** and, on violation, returns `exit code 2 + structured feedback` to trigger Claude's **self-correction cycle**.
@@ -277,6 +282,7 @@ All risky/heavy layers are opt-in, default OFF, auditable in one file
 
 | File | Content |
 |---|---|
+| [docs/philosophy.md](docs/philosophy.md) | Why AF exists — the deterministic-island thesis, the ideal, and the honest current reality |
 | [docs/architecture.md](docs/architecture.md) | Detailed architecture (two-layer / 3-layer pipeline / AET-OS Layer 3 mapping / Phase 0-5 composition) |
 | [docs/hybrid_setup.md](docs/hybrid_setup.md) | Hybrid setup guide — run a base quality tool (claude-code-quality-hook / pyright) + AF as +α, with verified composition |
 | [docs/limitations.md](docs/limitations.md) | Measured boundaries — what AF does / extends / structurally cannot (false-negative probes + Phase 2 38% name coverage + structure-vs-intent line) |
