@@ -11,15 +11,21 @@
 
 ## A/B 計測 evidence (= 小規模、 各自再現前提)
 
-| niche | hook OFF 完成度 | hook ON 完成度 | delta |
-|---|---|---|---|
-| AI 生成 raw コード (= 型注釈なし、 5 sample) | 20% | 100% | **+80%** |
-| 整理済みコード (= 型注釈完備、 12 sample) | 91.7% | 100% | +8.3% |
+> **訂正 (2026-05-22)**: 当初の v0.1.0 では「+80% / +8.3% pass@1」 と記載していたが、
+> **撤回した**。 計測場所 (`scratch/`、 ruff が per-file-ignores で無効) と answer-leak
+> プロンプトの二重欠陥で、 hook の ruff 層が発火しない誤計測だった。
 
-> 小 n (5/12)、 単一実行、 AF 自前 sample、 単一 model での計測。 Phase 1 撤退判定
-> 基準 (= pass@1 +5%) を **この corpus で** クリアしたもので、 一般保証ではない。
-> +80% は floor の低い raw niche、 +8.3% が well-typed での代表値。 結果は corpus /
-> model / prompt で変動。 各自 `python scripts/ab_automation.py` で再現すること。
+クリーン再計測 (機能プロンプト・`_ab_live/`・full select、 2026-05-22):
+
+| niche | hook OFF clean | hook ON clean | delta |
+|---|---|---|---|
+| 機能プロンプト task (5) | **0/5** (違反 11) | **5/5** (0) | **0 → 100%** |
+
+> 小 n (5)、 単一実行、 AF 自前 task、 単一 model。 効果はほぼ型注釈 (ANN) 軸が主で、
+> 代数・データ移動の差別化軸は「有能なモデルが元々綺麗に書く」 ため発火せず。 「% 改善」
+> でなく「保証 (hook 不発火 = AF 軸で clean と認証)」 として読むのが正確。 詳細は
+> `docs/evidence_summary.md` §1 / `docs/limitations.md` 参照。 各自
+> `python scripts/ab_automation.py` で再現すること。
 
 ## Phase 0 H1-H4 binding 仮説 達成
 
