@@ -58,6 +58,17 @@ intermediate 2→0.
   AF's larger latent value is on defect classes a model does NOT self-avoid
   (algebraic-law / data-movement), which simply did not occur in these tasks.
 
+> **Read it as a guarantee, not a delta.** A guardrail's value is the *invariant*
+> it enforces, not a percentage. With the hook ON (and the model free to revise),
+> **no function ships with an AF-detectable structural violation** — "the hook does
+> not fire" *certifies* the function clean on AF's axes (lint + data-movement +
+> name-recognized algebraic laws). ON 5/5 clean is that invariant holding. A capable
+> model that already writes clean code just means **low-friction confirmation +
+> catching the occasional miss** (here, type annotations) — exactly the desired
+> guardrail behaviour. The guarantee is over AF's *detectable* axes (not intent/
+> logic) and is conditional on the model being free to revise (the hook is advisory
+> — §1-4).
+
 ### 1-4. A second honest finding — the hook is advisory, not forcing
 
 An intermediate run (prompts that pinned "write exactly this code") showed

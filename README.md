@@ -43,6 +43,12 @@ code pinned), measured against the **full hook select** — clean re-measurement
 |---|---|---|---|
 | Functional-prompt tasks (5) | **0/5** (11 violations) | **5/5** (0) | **0 → 100%** |
 
+**Read it as a guarantee, not a delta.** The point of a guardrail is the invariant:
+with the hook ON, "the hook does not fire" *certifies* a function clean on AF's axes
+(lint + data-movement + name-recognized algebraic laws). A capable model writing
+clean code already just means low-friction confirmation plus catching the occasional
+miss — which is exactly what you want.
+
 > **Read this before quoting the number.** Small-n (5), single-run, AF's own task
 > set, one model. On this corpus the effect is **driven almost entirely by the ANN
 > (type-annotation) axis**: the model wrote functionally-clean code but omitted
