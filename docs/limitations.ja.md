@@ -149,6 +149,23 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 > 意図的な法則破り) では構造的に盲目 or 誤り。 これは QuixBugs 3% floor の代数法則
 > 版 — 能力は実在するが niche 限定。 `test_phase2_name_gate_property` で guard。
 
+## 2 つの honest 記録 (A/B 再計測、 2026-05-22)
+
+裁定保留だった点を、 埋もれさせず公開記録として明示する:
+
+1. **A/B 自己修正の看板数字は誤りで、 撤回した。** 旧「+80% / +8.3% pass@1」 は
+   `scratch/` で計測していた — `per-file-ignores = ["ALL"]` が `--select` 明示でも
+   ruff を無効化するため hook の ruff 層が発火せず — かつプロンプトが欠陥名を明示
+   (= hook OFF でも修正)。 クリーン再計測 (機能プロンプト・`_ab_live/`・full select)
+   は **OFF 0/5 → ON 5/5 clean (11→0)、 ほぼ型注釈 (ANN) 軸が主** = 有能なモデル上で
+   実在するが控えめ・ANN 主導の効果で、 +80% boost ではない。 「% 改善」 でなく
+   「保証」 (AF 検出可能な違反を出荷しない) として読む。 詳細訂正:
+   [evidence_summary.ja.md](evidence_summary.ja.md) §1。
+2. **hook は強制でなく助言。** `exit 2` feedback はユーザー意図と weigh される:
+   「このコードを exactly に書け」 と指示すると hook を無視して維持する (実測 ON =
+   OFF = 7)。 AF は指示に修正余地がある時に効果を出し、 それ以外では *通知* する
+   (= *強制* しない)。
+
 ## honest な要点
 
 AF の価値は **自動の構造ガードレール**。 仕様/意図の正しさは test・人間 review・

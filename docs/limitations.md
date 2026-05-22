@@ -162,6 +162,25 @@ Consequence — Phase 2 has **two-sided error**:
 > capability is real but niche-bounded. Guarded by
 > `test_phase2_name_gate_property`.
 
+## Two honest records (A/B re-measurement, 2026-05-22)
+
+Open judgment calls, recorded in the open rather than buried:
+
+1. **The A/B self-correction headline was wrong, and is retracted.** The earlier
+   "+80% / +8.3% pass@1" was measured in `scratch/` — where `per-file-ignores =
+   ["ALL"]` disables ruff even with explicit `--select`, so the hook's ruff layer
+   never fired — and with prompts that named the defect (so hook-OFF "fixed" too).
+   The clean re-measurement (functional prompts in `_ab_live/`, full select) is
+   **OFF 0/5 → ON 5/5 clean (11→0 violations), driven almost entirely by the
+   type-annotation (ANN) axis** — a real but modest, ANN-dominated effect on a
+   capable model, not a +80% boost. Read it as a guarantee (no AF-detectable
+   violation ships), not a delta. Full correction:
+   [evidence_summary.md](evidence_summary.md) §1.
+2. **The hook is advisory, not a hard gate.** Its `exit 2` feedback is weighed
+   against user intent: if you instruct "write exactly this code," the model keeps
+   it despite the hook (measured: ON = OFF = 7). AF improves outcomes when the
+   instruction leaves room to revise, and *informs* (does not *force*) otherwise.
+
 ## The honest takeaway
 
 AF's value is **automatic structural guardrails**; spec/intent correctness
