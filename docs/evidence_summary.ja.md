@@ -4,60 +4,65 @@ AF の各 Phase で取得した evidence + A/B 計測結果を articulate。 Pha
 
 ---
 
-## 1. A/B 計測結果 (= 真の AF 効果 evidence)
+## 1. A/B 計測結果 (= in-vivo AF 効果)
 
-### 1-1. 計測 protocol (詳細: [docs/_ab_measurement/protocol.md](_ab_measurement/protocol.md))
+> **訂正 (2026-05-22)** — 旧「+80% / +8.3% pass@1」 は **信頼できないため撤回**。
+> 実際に走らせて判明した三重欠陥:
+> 1. **測定場所**: `scratch/` に書いていたが、 `pyproject.toml` の
+>    `[tool.ruff.lint.per-file-ignores] "scratch/*.py" = ["ALL"]` が `--select`
+>    明示でも全 ruff ルールを無効化 → hook の ruff 層が発火せず `ruff_check_final`
+>    も常に 0 (実証: scratch の PERF401 は block されず、 同じファイルが root では
+>    block される)。
+> 2. **answer-leak**: プロンプトが欠陥名を明示 (「PERF401 を修正して」) → hook OFF
+>    でも修正してしまう。
+> 3. **内部矛盾**: 公開していた 5-task 表 (OFF 1/5) が automation log (OFF 5/5) と
+>    不一致 = 再現不能。
+>
+> 下記のクリーン再計測で置換する。
 
-- Round 1 (hook OFF): `.claude/settings.local.json` を rename して AF hook 無効化
-- Round 2 (hook ON): hook 有効化
-- 各 Round で違反コード書き込み + 修正依頼 task を実行
-- Claude の Edit 回数 + 最終 ruff 違反数 (全 layer) を計測
+### 1-1. クリーン protocol (v3、 2026-05-22)
 
-### 1-2. 5 task 版 (= AI 生成 raw コード niche)
+`scripts/ab_automation.py` (nested `claude --print`、 5 task × OFF/ON):
+- **場所 `_ab_live/`** (scratch でない) → hook の ruff 層が実発火。
+- **機能プロンプトのみ** — 各 task は振る舞いの目的だけ述べ、 欠陥名もコードも固定
+  しない → モデルは自由に書き、 hook feedback を取り込める。
+- 残存違反は **hook と同じ full select** (PERF,SIM,FURB,ANN,F,RUF013 + Phase 3
+  AST) で計測。
 
-scratch/_ab_*.py に bare 違反コード (= 型注釈なし) を書かせて修正依頼。
+### 1-2. 結果
 
-| task | OFF Edit数 | OFF 残違反 (全 layer) | ON Edit数 | ON 残違反 (全 layer) |
-|---|---|---|---|---|
-| perf401 | 1 | 2 残置 | 2 | 0 |
-| sim103 | 1 | 2 残置 | 2 | 0 |
-| sim300 | 1 | 2 残置 | 2 | 0 |
-| ann001 | 1 | 0 | 1 | 0 |
-| intermediate | 1 | 2 残置 | 2 | 0 |
-
-集計:
-- 全 layer 修正成功率: OFF **1/5 = 20%** vs ON **5/5 = 100%** → **+80%**
-- 平均 Edit 回数: OFF 1.0 vs ON 1.8 → +80% (= trade-off、 完成度に投資)
-
-### 1-3. 12 sample wide 版 (= 整理済みコード niche)
-
-manifest 駆動 で ruff-target PASS sample 12 件 (= 型注釈完備の整理済違反 sample) を使用。
-
-| 指標 | OFF | ON | delta |
+| Round | clean ファイル | 残存違反 | 平均 edits/task |
 |---|---|---|---|
-| 全 layer 修正成功率 | 11/12 = 91.7% | 12/12 = 100% | **+8.3%** |
-| 平均 Edit 回数 | 1.0 | 1.08 | +8% (= 1 sample のみ +1) |
+| OFF (hook 無効) | **0/5** | **11** | 0.0 |
+| ON (hook 有効) | **5/5** | **0** | 1.0 |
 
-失敗 1 件 (= b007_unused_loop_variable hook OFF) は元 sample に型注釈なしのため、 5 task 版と同 pattern で連鎖違反残置。
+task 別 (OFF→ON 残存): perf401 2→0、 sim103 2→0、 sim300 2→0、 ann001 3→0、
+intermediate 2→0。
 
-### 1-4. Phase 1 撤退判定ポイント 1 照合
+### 1-3. honest な読み (= 効果の実態)
 
-| 基準 | 5 task 版 | wide 版 | 判定 |
-|---|---|---|---|
-| pass@1 +5% 改善 | +80% | +8.3% | **両 niche でクリア** |
-| 修正サイクル -10% 改善 | +80% 増加 | +8% 増加 | 未達 (= 完成度に投資する trade-off) |
-| 両方未達なら撤退 (AND) | pass@1 クリア | pass@1 クリア | **この corpus で撤退基準該当せず** (= 小 n / 単一実行 / AF 自前 sample、 一般保証ではない) |
+- 機能プロンプトだとモデルは **機能的に綺麗なコード**を書く (PERF401 なし・ yoda
+  なし・ 中間 list なし) → AF の PERF/SIM/データ移動 **差別化軸は発火せず**。 有能な
+  モデルはこれらを自分で避ける。
+- だが **全 OFF 関数が型注釈欠落** (ANN001/ANN201) を出荷 — モデルは型注釈を自発
+  追加しない。 hook (ON) がこれを捕捉 → モデルが各 1 edit で自己修正 → 0 違反。
+- よって今回の in-vivo 効果は **0/5 → 5/5 clean (11→0)、 ほぼ ANN (型注釈) 軸が主**。
+  ANN を除けば OFF も ON もほぼ clean。 単純 lint では効果は実在するが narrow、 AF の
+  より大きな潜在価値は **モデルが自分で避けない欠陥クラス** (代数法則・データ移動)
+  にあり、 今回の task ではそれが発生しなかった。
 
-### 1-5. 適用 niche 差の articulate
+### 1-4. もう一つの honest な発見 — hook は強制でなく助言
 
-| niche | AI 生成 raw コード | 整理済みコード |
-|---|---|---|
-| 想定環境 | Claude が新規生成する type-bare な関数定義 | 既存 sample の単 layer 違反のみ含む整理済コード |
-| hook OFF 動作 | 元 violation のみ修正、 ANN001/ANN201 等の連鎖違反は task scope 外として残置 | 元 violation を修正、 連鎖違反は元から少なく完成度高 |
-| hook ON 動作 | 多 layer 連鎖検出 → 全違反を 2 cycle で解消 | 単 layer 違反を 1 cycle で解消、 追加違反は元から少ない |
-| AF 効果 | **+80% pass@1** (= 大 impact) | **+8.3% pass@1** (= 補助 cleanup) |
+中間 run (「このコードを exactly に書け」と固定したプロンプト) では ON = OFF = 7
+残存だった: モデルは **hook を無視してコードを verbatim 維持**し、 ユーザー明示指示が
+hook の `exit 2` feedback を上書きすると判断した。 つまり hook は **ユーザー意図と
+weigh される助言 feedback** であり hard gate ではない。 指示に余地がある時 (機能
+プロンプト、 §1-2) は効くが、 ユーザーがコードを固定すると効かない。
 
-→ AF は **AI 生成 raw コードでこそ真価**、 整理済コードでも +8.3% で 撤退基準クリア。
+### 1-5. Phase 1 撤退判定ポイント 1 照合
+
+pass@1 (= 違反 0 率): OFF **0%** → ON **100%** (この corpus) → +5% 基準クリア。
+留保: 小 n (5 task)・単一実行・AF 自前 task・**ANN 主導** = 一般保証ではない。
 
 ---
 
@@ -210,17 +215,30 @@ Pre-emptive hint: review the alternative skeleton before re-writing.
 
 ## 6. End-to-end 動作 evidence (= 実 Claude session)
 
-### 6-1. nested `claude --print` で自動 A/B (= scripts/ab_automation*.py)
+### 6-1. nested `claude --print` で自動 A/B (= scripts/ab_automation.py)
 
-- 5 task × 2 round = 10 nested session
-- 12 sample × 2 round = 24 nested session
-- 全 session で hook 発火 + structured feedback 注入 + Claude 自己修正サイクル動作確認
+クリーン再計測 2026-05-22 (v3): 5 task × OFF/ON = 10 nested session、 `_ab_live/`、
+機能プロンプト、 full-select 計測 → §1-2 (OFF 0/5 → ON 5/5、 11→0 残存)。 ON round
+で hook 発火 + モデル自己修正 (1 edit/task) を確認。
 
-### 6-2. chai 手動 session で end-to-end
+> 旧 scratch ベース run (5×2、 12×2) は **撤回**: `scratch/` に書いており (ruff
+> per-file-ignores ALL で ruff 層死) answer-leak プロンプトだった。 JSON log
+> (`log_auto_*.json`) は記録として local 保持するが有効 evidence ではない。
 
-[2026-05-20 chai 試行] scratch/test_target.py に append loop 違反コード書き込み → hook 発火 → PERF401 検出 → Claude が list comprehension に修正 → 再 hook で ANN001/ANN201 検出 → Claude が型注釈追加 → hook PASS。
+### 6-2. 検証済み hook 発火挙動 (= 場所が効く、 2026-05-22 実測)
 
-**多 step feedback chain (= PERF401 → ANN201 → ANN001 → PASS) の連鎖動作 evidence 取得**。
+| 書込先 | ruff 層 (PERF/SIM/FURB/ANN) | Phase 3 AST |
+|---|---|---|
+| `scratch/*.py` | **発火せず** (`per-file-ignores = ["ALL"]`) | 発火 |
+| `_ab_live/` or repo root (非 ignore) | **発火** (exit 2 + feedback) | 発火 |
+
+直接実証: `scratch/` の PERF401 は block されず、 同じファイルが `_ab_live/` / root で
+は `exit 2` で block。 intermediate-list-chain はどこでも block (Phase 3 は ruff 設定
+非依存)。 v3 ON round でモデルは hook feedback を受け自己修正 (例: `add(x, y)` →
+`add(x: int, y: int) -> int`)。
+
+> 訂正: 旧記録は「`scratch/test_target.py` で hook 発火」と書いていたが、 検証済み
+> `per-file-ignores` 挙動と矛盾するため削除。
 
 ---
 
@@ -276,7 +294,8 @@ competitor の目玉「3 段 AI 自動修正」 pipeline は protected 環境で
   修正を委任 = AF と同じ outcome model**。
 
 よって competitor の AI pipeline の修正成功率は **未測定** (= honest
-limitation)。 AF 自身の修正成功率は §6 で別途実測 (= 20→100% / 91.7→100%)。
+limitation)。 AF 自身の修正成功率は §1 で別途実測 (= クリーン再計測 OFF 0/5 →
+ON 5/5、 ANN 主導。 旧 20→100%/91.7→100% は撤回 — §1 訂正注記参照)。
 
 ### 7-3. 着手した gap 閉鎖
 

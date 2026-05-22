@@ -34,21 +34,27 @@ violation detected → exit code 2 + structured feedback → Claude self-correct
 
 ## Action evidence (small-scale, reproduce-it-yourself)
 
-A/B measurement automated via `claude --print` nested sessions:
+A/B measurement automated via `claude --print` nested sessions, in `_ab_live/`
+(where the hook actually fires), with **functional prompts** (no defect named, no
+code pinned), measured against the **full hook select** — clean re-measurement
+2026-05-22:
 
-| Evaluation niche | hook OFF completion | hook ON completion | delta |
+| Evaluation niche | hook OFF clean | hook ON clean | delta |
 |---|---|---|---|
-| **AI-generated raw code** (no type annotations, 5 samples) | 20% | 100% | **+80%** |
-| **Curated code** (typed, 12 samples) | 91.7% | 100% | +8.3% |
+| Functional-prompt tasks (5) | **0/5** (11 violations) | **5/5** (0) | **0 → 100%** |
 
-> **Read this before quoting the numbers.** These are **small-n (5 and 12),
-> single-run measurements on AF's own violation samples**, on one model. They
-> clear the Phase 1 withdrawal criterion (`pass@1 +5%`) **on this corpus** —
-> they are **not a general performance guarantee**. The headline +80% is the
-> raw-code niche where the floor is low (20% → 100%); the curated-code delta
-> (+8.3%) is more representative of well-typed codebases. **Your results will
-> vary** with corpus, model, and prompt. Reproduce in your own context with
-> `python scripts/ab_automation.py` rather than taking these as fixed.
+> **Read this before quoting the number.** Small-n (5), single-run, AF's own task
+> set, one model. On this corpus the effect is **driven almost entirely by the ANN
+> (type-annotation) axis**: the model wrote functionally-clean code but omitted
+> type hints on every function, and the hook enforced them. The PERF/SIM/
+> data-movement differentiators did not trigger (a capable model avoids those
+> patterns on its own). The hook is **advisory** — if you pin exact code it will
+> keep it despite the hook. **Not a general performance guarantee**; reproduce with
+> `python scripts/ab_automation.py`.
+>
+> The earlier "+80% / +8.3%" headline is **retracted** — it was measured in
+> `scratch/` where ruff is disabled by `per-file-ignores` and prompts named the
+> defect. See `docs/evidence_summary.md` §1 for the full correction.
 
 ## Is this the right tool for you? (applicability matrix)
 
@@ -268,7 +274,7 @@ All risky/heavy layers are opt-in, default OFF, auditable in one file
 | [docs/architecture.md](docs/architecture.md) | Detailed architecture (two-layer / 3-layer pipeline / AET-OS Layer 3 mapping / Phase 0-5 composition) |
 | [docs/hybrid_setup.md](docs/hybrid_setup.md) | Hybrid setup guide — run a base quality tool (claude-code-quality-hook / pyright) + AF as +α, with verified composition |
 | [docs/limitations.md](docs/limitations.md) | Measured boundaries — what AF does / extends / structurally cannot (false-negative probes + Phase 2 38% name coverage + structure-vs-intent line) |
-| [docs/evidence_summary.md](docs/evidence_summary.md) | Evidence summary (A/B +80%/+8.3% / Phase 0 H1-H4 / Phase 2 100% subset / Phase 3 100% subset / end-to-end Claude self-correction) |
+| [docs/evidence_summary.md](docs/evidence_summary.md) | Evidence summary (A/B clean re-measurement OFF 0/5→ON 5/5 ANN-dominated; +80%/+8.3% retracted / Phase 0 H1-H4 / Phase 2 100% subset / Phase 3 100% subset / end-to-end Claude self-correction) |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Known issues + countermeasures (Windows path mangling / Scalpel typed-ast / memray Windows / session reload / auto-mode classifier) |
 
 Japanese versions: [README.ja.md](README.ja.md), [USAGE.ja.md](USAGE.ja.md), [CONTRIBUTING.ja.md](CONTRIBUTING.ja.md), and [docs/*.ja.md](docs/) (`.ja` suffix files).

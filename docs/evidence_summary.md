@@ -6,60 +6,72 @@ Evidence collected across each Phase + A/B measurement, with Phase 1 withdrawal-
 
 ---
 
-## 1. A/B measurement results (the actual AF-effect evidence)
+## 1. A/B measurement results (in-vivo AF effect)
 
-### 1-1. Measurement protocol (details: [docs/_ab_measurement/protocol.md](_ab_measurement/protocol.md))
+> **Correction (2026-05-22)** — the earlier "+80% / +8.3% pass@1" figures are
+> **RETRACTED as unreliable**. Three compounding flaws, found by actually running
+> the measurement:
+> 1. **Location**: files were written to `scratch/`, where `pyproject.toml`'s
+>    `[tool.ruff.lint.per-file-ignores] "scratch/*.py" = ["ALL"]` disables every
+>    ruff rule even with explicit `--select`. So the hook's ruff layer never fired
+>    there, and `ruff_check_final` always returned 0 (verified: a PERF401 file in
+>    `scratch/` is not blocked; the same file at repo root is).
+> 2. **Answer-leak**: prompts named the defect ("then fix the PERF401 violation"),
+>    so hook-OFF "fixed" too.
+> 3. **Internal inconsistency**: the published 5-task table (OFF 1/5) did not match
+>    the automation log (OFF 5/5). The numbers were not reproducible.
+>
+> The clean re-measurement below replaces them.
 
-- Round 1 (hook OFF): Rename `.claude/settings.local.json` to disable AF hook
-- Round 2 (hook ON): Re-enable hook
-- In each round: write violating code + ask Claude to fix
-- Count Claude's Edit invocations + final ruff violations (full-layer)
+### 1-1. Clean protocol (v3, 2026-05-22)
 
-### 1-2. 5-task version (AI-generated raw-code niche)
+Via `scripts/ab_automation.py` (nested `claude --print`, 5 tasks × OFF/ON):
+- **Location `_ab_live/`** (NOT scratch) → the hook's ruff layer actually fires.
+- **Functional prompts only** — each task states a behavioral goal, never names a
+  defect and never pins exact code, so the model writes freely and can incorporate
+  hook feedback.
+- Surviving violations measured with the **full hook select**
+  (PERF,SIM,FURB,ANN,F,RUF013 + Phase 3 AST) — the same bar the hook enforces.
 
-Bare violating code (no type annotations) written to `scratch/_ab_*.py` and asked to fix.
+### 1-2. Result
 
-| Task | OFF Edits | OFF remaining (full-layer) | ON Edits | ON remaining (full-layer) |
-|---|---|---|---|---|
-| perf401 | 1 | 2 remaining | 2 | 0 |
-| sim103 | 1 | 2 remaining | 2 | 0 |
-| sim300 | 1 | 2 remaining | 2 | 0 |
-| ann001 | 1 | 0 | 1 | 0 |
-| intermediate | 1 | 2 remaining | 2 | 0 |
-
-Summary:
-- Full-layer success rate: OFF **1/5 = 20%** vs ON **5/5 = 100%** → **+80%**
-- Average Edit count: OFF 1.0 vs ON 1.8 → +80% (trade-off, invested in completion-depth)
-
-### 1-3. 12-sample wide version (curated-code niche)
-
-Manifest-driven, 12 ruff-target PASS samples (with type annotations).
-
-| Metric | OFF | ON | delta |
+| Round | Files clean | Surviving violations | Avg edits/task |
 |---|---|---|---|
-| Full-layer success rate | 11/12 = 91.7% | 12/12 = 100% | **+8.3%** |
-| Average Edit count | 1.0 | 1.08 | +8% (only 1 sample needed +1) |
+| OFF (hook disabled) | **0/5** | **11** | 0.0 |
+| ON (hook enabled) | **5/5** | **0** | 1.0 |
 
-The single failure (b007_unused_loop_variable hook OFF) is the same pattern as the 5-task version: original code lacked type annotations, so chain violations remained.
+Per task (OFF→ON surviving): perf401 2→0, sim103 2→0, sim300 2→0, ann001 3→0,
+intermediate 2→0.
 
-### 1-4. Phase 1 withdrawal-criterion check
+### 1-3. Honest reading (what the effect actually is)
 
-| Criterion | 5-task | wide | Judgment |
-|---|---|---|---|
-| pass@1 +5% improvement | +80% | +8.3% | **Cleared in both niches** |
-| Edit cycles -10% improvement | +80% increase | +8% increase | Not met (trade-off invested in completion-depth) |
-| Both unmet → withdrawal (AND) | pass@1 cleared | pass@1 cleared | **Withdrawal criterion not met on this corpus** (small n, single run, AF's own samples — not a general guarantee) |
+- Under functional prompts the model wrote **functionally-clean code** (no PERF401,
+  no Yoda condition, no intermediate-list-chain) — so AF's PERF/SIM/data-movement
+  **differentiators did not trigger**; a capable model avoids those patterns on its
+  own.
+- **Every** OFF function nonetheless shipped **missing type annotations** (ANN001/
+  ANN201) — which the model does not add unprompted. The hook (ON) caught these and
+  the model self-corrected in 1 edit each → 0 violations.
+- So the measured in-vivo effect on this corpus is **0/5 → 5/5 clean (11→0),
+  driven almost entirely by the ANN (type-annotation) axis**. Exclude ANN and OFF
+  and ON would both be ~clean here. The effect is real but narrow on simple lint;
+  AF's larger latent value is on defect classes a model does NOT self-avoid
+  (algebraic-law / data-movement), which simply did not occur in these tasks.
 
-### 1-5. Niche-difference articulation
+### 1-4. A second honest finding — the hook is advisory, not forcing
 
-| Niche | AI-generated raw code | Curated code |
-|---|---|---|
-| Assumed environment | Type-bare function definitions Claude newly generates | Existing samples with single-layer violations only |
-| Hook OFF behavior | Fixes only the original violation; ANN001/ANN201 chain violations remain (Claude treats as out-of-scope) | Fixes the original violation; chain violations are few from the start (already high quality) |
-| Hook ON behavior | Multi-layer chain detection → fixes all violations in 2 cycles | Single-layer fix in 1 cycle; few additional violations |
-| AF effect | **+80% pass@1** (large impact) | **+8.3% pass@1** (cleanup auxiliary) |
+An intermediate run (prompts that pinned "write exactly this code") showed
+ON = OFF = 7 surviving: the model **kept the verbatim code despite the hook**,
+treating the explicit user instruction as overriding the hook's `exit 2` feedback.
+So the hook is **advisory feedback weighed against user intent**, not a hard gate.
+It improves outcomes when the instruction leaves room (functional prompts, §1-2),
+not when the user pins conflicting exact code.
 
-→ AF shows **true value in AI-generated raw code**; even in curated code, +8.3% clears the withdrawal criterion.
+### 1-5. Phase 1 withdrawal-criterion check
+
+pass@1 (zero-violation rate): OFF **0%** → ON **100%** on this corpus → clears the
++5% criterion. Caveats: small n (5 tasks), single run, AF's own task set,
+**ANN-dominated** — not a general guarantee.
 
 ---
 
@@ -211,17 +223,33 @@ Pre-emptive hint: review the alternative skeleton before re-writing.
 
 ## 6. End-to-end evidence (real Claude session)
 
-### 6-1. Automated A/B via nested `claude --print` (scripts/ab_automation*.py)
+### 6-1. Automated A/B via nested `claude --print` (scripts/ab_automation.py)
 
-- 5 tasks × 2 rounds = 10 nested sessions
-- 12 samples × 2 rounds = 24 nested sessions
-- All sessions confirm hook fire + structured feedback injection + Claude self-correction cycle
+Clean re-measurement 2026-05-22 (v3): 5 tasks × OFF/ON = 10 nested sessions, in
+`_ab_live/`, functional prompts, full-select measurement → §1-2 (OFF 0/5 → ON
+5/5; 11→0 surviving). The hook fired and the model self-corrected (1 edit/task)
+in the ON round.
 
-### 6-2. Manual chai-session end-to-end
+> Prior scratch-based runs (5×2 and 12×2) are **retracted**: they wrote to
+> `scratch/` (ruff per-file-ignores ALL → ruff layer dead) with answer-leak
+> prompts. Their JSON logs (`log_auto_*.json`) are kept locally as a record but
+> are not valid effectiveness evidence.
 
-[2026-05-20 chai try] Append-loop violation written to `scratch/test_target.py` → hook fired → PERF401 detected → Claude rewrote as list comprehension → hook fired again → ANN001/ANN201 detected → Claude added type annotations → hook PASS.
+### 6-2. Verified hook-fire behaviour (location matters — measured 2026-05-22)
 
-**Multi-step feedback chain (PERF401 → ANN201 → ANN001 → PASS) verified in a real Claude Code session.**
+| Write target | ruff layer (PERF/SIM/FURB/ANN) | Phase 3 AST |
+|---|---|---|
+| `scratch/*.py` | **does NOT fire** (`per-file-ignores = ["ALL"]`) | fires |
+| `_ab_live/` or repo root (not ignored) | **fires** (exit 2 + feedback) | fires |
+
+Verified directly: a PERF401 file in `scratch/` is not blocked; the identical
+file in `_ab_live/` / root is blocked with `exit 2`. An intermediate-list-chain
+file is blocked anywhere (Phase 3 ignores ruff config). In the v3 ON round the
+model received the hook feedback and self-corrected (e.g. `add(x, y)` →
+`add(x: int, y: int) -> int`).
+
+> Correction: an earlier note claimed the hook fired on `scratch/test_target.py`;
+> that contradicts the verified `per-file-ignores` behaviour and is removed.
 
 ---
 
@@ -278,8 +306,9 @@ in a protected environment:
   and delegates the fix to the calling Claude — the SAME outcome model as AF.**
 
 So fix-success quality of the competitor's AI pipeline is **unmeasured**
-(honest limitation). AF's own fix-success is measured separately (§6:
-20→100% / 91.7→100%).
+(honest limitation). AF's own fix-success is measured separately (§1: clean
+re-measurement OFF 0/5 → ON 5/5, ANN-dominated; the earlier 20→100%/91.7→100%
+figures are retracted — see §1 correction note).
 
 ### 7-3. Actioned gap closure
 

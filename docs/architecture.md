@@ -164,10 +164,10 @@ CrossHair + QWED, recommended in AET-OS PDF §4.2, are the Python formal-verific
 
 ### Phase 1 withdrawal criterion 1 cleared
 
-A/B measurement evidence (see [docs/evidence_summary.md](evidence_summary.md)):
-- 5-task version (raw-code niche): pass@1 +80%
-- 12-sample wide version (curated niche): pass@1 +8.3%
-- Both niches clear withdrawal criterion (+5%) **on this corpus** (small n, single run, AF's own samples — not a general guarantee)
+A/B measurement evidence (clean re-measurement 2026-05-22, see [docs/evidence_summary.md](evidence_summary.md) §1):
+- Functional-prompt tasks in `_ab_live/` (hook fires), full-select: OFF 0/5 clean (11 violations) → ON 5/5 (0)
+- Clears withdrawal criterion (+5%) **on this corpus** (small n, single run, AF's own tasks, ANN-dominated — not a general guarantee)
+- The earlier "+80%/+8.3%" figures are **retracted** (measured in scratch where ruff is disabled + answer-leak prompts)
 
 ---
 

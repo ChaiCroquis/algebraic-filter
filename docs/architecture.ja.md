@@ -155,10 +155,10 @@ AET-OS PDF §4.2 で推奨される CrossHair + QWED は Python 形式検証の 
 
 ### Phase 1 撤退判定 ポイント 1 クリア
 
-A/B 計測 evidence (= [docs/evidence_summary.ja.md](evidence_summary.ja.md)):
-- 5 task 版 (raw コード niche): pass@1 +80%
-- 12 sample wide 版 (整理済 niche): pass@1 +8.3%
-- 両 niche で 撤退判定基準 (+5%) を **この corpus で** クリア (= 小 n / 単一実行 / AF 自前 sample、 一般保証ではない)
+A/B 計測 evidence (= クリーン再計測 2026-05-22、 [docs/evidence_summary.ja.md](evidence_summary.ja.md) §1):
+- `_ab_live/` (hook 発火) で機能プロンプト・full-select 計測: OFF 0/5 clean (違反 11) → ON 5/5 (0)
+- 撤退判定基準 (+5%) を **この corpus で** クリア (= 小 n / 単一実行 / AF 自前 task / ANN 主導、 一般保証ではない)
+- 旧「+80%/+8.3%」 は **撤回** (= scratch で ruff 無効 + answer-leak プロンプトのため)
 
 ---
 

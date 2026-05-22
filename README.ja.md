@@ -34,20 +34,24 @@ Layer 3 データ移動 (数十秒): tracemalloc / memray + 閾値判定
 
 ## 動作 evidence (= 小規模、 各自で再現する前提)
 
-A/B 計測自動実走 (= `claude --print` nested session 経由) で取得した evidence:
+A/B 計測自動実走 (= `claude --print` nested session)。 `_ab_live/` (hook が実発火する
+場所) で、 **機能プロンプト** (欠陥名・コード固定なし) で、 **hook と同じ full select**
+で計測。 クリーン再計測 2026-05-22:
 
-| 評価 niche | hook OFF 完成度 | hook ON 完成度 | delta |
+| 評価 niche | hook OFF clean | hook ON clean | delta |
 |---|---|---|---|
-| **AI 生成 raw コード** (= 型注釈なし、 5 sample) | 20% | 100% | **+80%** |
-| **整理済みコード** (= 型注釈完備、 12 sample) | 91.7% | 100% | +8.3% |
+| 機能プロンプト task (5) | **0/5** (違反 11) | **5/5** (0) | **0 → 100%** |
 
-> **数字を引用する前に読むこと。** これは **小 n (5 / 12)、 単一実行、 AF 自前の
-> 違反 sample、 単一 model** での計測。 Phase 1 撤退判定基準 (`pass@1 +5%`) を
-> **この corpus で** クリアしたもので、 **一般的な性能保証ではない**。 見出しの
-> +80% は floor が低い raw-code niche (= 20% → 100%) であり、 整理済みコードの
-> delta (+8.3%) の方が well-typed codebase での代表値に近い。 **結果は corpus /
-> model / prompt で変動する**。 固定値とせず `python scripts/ab_automation.py`
-> で各自の文脈で再現すること。
+> **数字を引用する前に読むこと。** 小 n (5)、 単一実行、 AF 自前 task、 単一 model。
+> この corpus では効果は **ほぼ ANN (型注釈) 軸が主**: モデルは機能的に綺麗な
+> コードを書くが全関数で型注釈を省略 → hook がそれを強制した。 PERF/SIM/データ移動の
+> 差別化軸は発火せず (有能なモデルは自分で避ける)。 hook は **助言的** — コードを
+> 固定すると hook を無視して維持する。 **一般的な性能保証ではない**。 再現は
+> `python scripts/ab_automation.py`。
+>
+> 旧「+80% / +8.3%」 見出しは **撤回** — `scratch/` (= `per-file-ignores` で ruff
+> 無効) で計測し、 プロンプトが欠陥名を明示していたため。 詳細は
+> `docs/evidence_summary.md` §1 の訂正を参照。
 
 ## このツールはあなたの状況に合うか? (適用域マトリクス)
 
@@ -259,7 +263,7 @@ python scripts/ab_automation_wide.py
 | [docs/architecture.ja.md](docs/architecture.ja.md) | 詳細アーキテクチャ (= 二層構造 / 3 層検証パイプライン / AET-OS Verified Orchestrator Pattern Layer 3 mapping / Phase 0-5 構成) |
 | [docs/hybrid_setup.ja.md](docs/hybrid_setup.ja.md) | ハイブリッド構築手順 — base 品質ツール (claude-code-quality-hook / pyright) + AF を +α で併用、 合成検証済 |
 | [docs/limitations.ja.md](docs/limitations.ja.md) | 実測境界 — AF が できる / 拡張 / 構造的に不可 (false-negative プローブ + Phase 2 keyword 被覆 38% + 構造 vs 意図 の線引き) |
-| [docs/evidence_summary.ja.md](docs/evidence_summary.ja.md) | 検証結果集約 (= A/B 計測 +80%/+8.3% / Phase 0 H1-H4 / Phase 2 hypothesis-target 100% / Phase 3 data-movement 100% / Phase 4 統一 schema / end-to-end Claude 自己修正サイクル動作 evidence) |
+| [docs/evidence_summary.ja.md](docs/evidence_summary.ja.md) | 検証結果集約 (= A/B クリーン再計測 OFF 0/5→ON 5/5 ANN 主導; +80%/+8.3% 撤回 / Phase 0 H1-H4 / Phase 2 hypothesis-target 100% / Phase 3 data-movement 100% / Phase 4 統一 schema / end-to-end Claude 自己修正サイクル動作 evidence) |
 | [docs/troubleshooting.ja.md](docs/troubleshooting.ja.md) | 既知の問題 + 対策 (= Windows path mangling / Scalpel typed-ast Python 3.13 build 失敗 / memray Windows 不可 / session reload 不可 / auto-mode classifier nested block) |
 | [docs/algebraic_filter_project_plan.md](docs/algebraic_filter_project_plan.md) | プロジェクト計画書 (= 1〜13 章: 動機 / 問題 / アプローチ / scope / 5 Phase roadmap / 撤退基準 / 成功基準 / 差別化軸) |
 | [docs/algebraic_filter_phase0_pre_reg.md](docs/algebraic_filter_phase0_pre_reg.md) | Phase 0 Pre-registration (= 仮説 H1-H4 / 成功基準 S0-1〜S0-5 / 撤退基準 W0-1〜W0-5 / baseline 計測結果 / ツール調査結果) |

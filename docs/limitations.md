@@ -52,7 +52,7 @@ The algebraic-law class alone carries an **extra double gate** the others do not
 | Lint defects: PERF / SIM / FURB / ANN / F / RUF013 | 1 (ruff) | ~16 ms via the ruff binary |
 | Data movement: intermediate-list-chain / dict-keys-list / explicit-copy / string-concat-in-loop | 3 (AST) | + tracemalloc runtime |
 | Algebraic-law violations (Monoid / Functor / Monad / …) | 2 (hypothesis) | **only on keyword-named functions** — see ③ |
-| Structured feedback → Claude self-correction | 4 | measured pass@1 raw 20→100%, curated 91.7→100% (small-n, own corpus) |
+| Structured feedback → Claude self-correction | 4 | clean re-measurement (2026-05-22): OFF 0/5 → ON 5/5 clean, ANN-dominated, small-n own tasks (the earlier 20→100%/91.7→100% is retracted — see evidence_summary §1) |
 
 On AF's own 46-sample corpus: full-stack detection **28/46 (61%)**.
 
