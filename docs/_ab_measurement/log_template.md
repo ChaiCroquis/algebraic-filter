@@ -1,6 +1,10 @@
-# A/B 計測 log template
+# A/B 計測 log template (protocol v2 対応)
 
 各 round 実行後、 chai が以下 template を copy + 値を埋めて `log_hook_<off|on>_<YYYY-MM-DD>.md` として landing。
+
+> **v2 主指標 = 「最終 ruff 違反数 / Phase3 AST 違反数」 (= 残存 AF 違反数)**。 neutral prompt
+> (修正指示なし) で実行するため、 OFF は残存 > 0・ON は hook 自己修正で残存 0 が期待値。
+> 「修正サイクル数」 は副指標。 [protocol.md](protocol.md) / [tasks_neutral.md](tasks_neutral.md) 参照。
 
 ---
 
