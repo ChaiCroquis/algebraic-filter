@@ -142,20 +142,24 @@ Consequence — Phase 2 has **two-sided error**:
 - **false positives**: a function correctly named `merge` but intentionally
   *not* commutative (e.g. left-biased merge) would be flagged.
 
-> **Precision fix — declaration over guess (P1, 2026-05-22)**: the root cause of
-> both errors is that the law is *guessed from the name*. The fix is to verify a
-> *declared* law instead. Two decorators (`af_phase2.inferrer`):
-> - `@law("commutativity")` — AF verifies the declared law, **name-independent**
->   (closes the false-negative: works on any name, e.g. `thingy`).
-> - `@no_law` (or `@law()`) — declares "this function bears no law", suppressing
->   the name heuristic (closes the false-positive: an intentionally non-commutative
->   `merge` is no longer flagged).
+> **Precision fix — declaration as an OPT-IN path (P1, 2026-05-22)**: an
+> *opt-in* way to verify a *declared* law instead of guessing from the name. Two
+> decorators (`af_phase2.inferrer`):
+> - `@law("commutativity")` — verifies the declared law, **name-independent**
+>   (catches the false-negative *for declared functions*, e.g. `thingy`).
+> - `@no_law` (or `@law()`) — declares "no law", suppressing the name heuristic
+>   (removes the false-positive *for declared functions*, e.g. a deliberately
+>   non-commutative `merge`).
 >
-> Declared laws take priority over the name heuristic; undeclared functions fall
-> back to it (backward-compatible). This shifts Phase 2 from "guess and hope" to
-> "verify what is stated" — the formal-methods contract model. Guarded by
-> `test_af_phase2_declared_laws.py` (FP-suppression + FN-fix + priority +
-> backward-compat).
+> **Honest scope — this does NOT change the default.** Declared laws take
+> priority; undeclared functions still use the name heuristic. So the two-sided
+> error is **closed only for functions that opt in to declaration, not rooted out
+> by default**. The neutral mutation benchmark — which declares nothing — is
+> **unchanged**: name-gate effect still 100%, FP-by-intent still 2/2
+> (re-measured 2026-05-24). What the unit tests prove is that the declaration
+> *mechanism* works (`test_af_phase2_declared_laws.py`), not that the default
+> behaviour improved. Declaration is a capability you reach for, not an automatic
+> fix.
 
 > **Neutral mutation benchmark (no home-field bias), measured 2026-05-21** via
 > `scripts/eval_algebra_mutants.py`. No public corpus of "named functions that

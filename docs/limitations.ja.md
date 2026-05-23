@@ -130,17 +130,20 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 - **false positive**: 正しく `merge` と名付けたが意図的に非可換 (= 左優先 merge) な
   関数を誤検出しうる。
 
-> **精度修正 — 推測でなく宣言を検証 (P1、 2026-05-22)**: 両エラーの根因は法則を
-> *名前から推測* すること。 修正は *宣言された* 法則を検証すること。 デコレータ 2 つ
-> (`af_phase2.inferrer`):
-> - `@law("commutativity")` — 宣言した法則を **名前非依存** で検証 (= FN 根治: `thingy`
->   のような非認識名でも効く)。
-> - `@no_law` (or `@law()`) — 「この関数は法則を持たない」 宣言で名前 heuristic を抑止
->   (= FP 根治: 意図的に非可換な `merge` がもう誤検出されない)。
+> **精度修正 — 宣言という OPT-IN path (P1、 2026-05-22)**: 名前から推測する代わりに
+> *宣言された* 法則を検証する *opt-in* 手段。 デコレータ 2 つ (`af_phase2.inferrer`):
+> - `@law("commutativity")` — 宣言した法則を **名前非依存** で検証 (*宣言した関数では*
+>   FN を捕捉: `thingy` のような非認識名でも効く)。
+> - `@no_law` (or `@law()`) — 「法則を持たない」 宣言で名前 heuristic を抑止
+>   (*宣言した関数では* FP を除去: 意図的に非可換な `merge`)。
 >
-> 宣言は名前 heuristic に優先し、 未宣言は従来どおり fallback (後方互換)。 これで
-> Phase 2 は「推測して祈る」から「宣言を検証する」 = 形式手法の契約モデルへ移行。
-> `test_af_phase2_declared_laws.py` で固定 (FP抑止 + FN修正 + 優先 + 後方互換)。
+> **honest な適用範囲 — デフォルトは変わらない。** 宣言は名前 heuristic に優先するが、
+> 未宣言の関数は従来どおり推測する。 つまり両側エラーは **宣言に opt-in した関数でのみ
+> 閉じる。 デフォルトで根治するのではない**。 何も宣言しない中立 mutation benchmark は
+> **不変**: name-gate 効果は依然 100%、 FP-by-intent は依然 2/2 (2026-05-24 再測定)。
+> 単体テストが証明するのは宣言 *mechanism が動く* こと (`test_af_phase2_declared_laws.py`)
+> であって、 デフォルト挙動が良くなったことではない。 宣言は「自分で使う capability」 で
+> あって自動の修正ではない。
 
 > **中立 mutation benchmark (home-field bias なし)、 2026-05-21 実測** —
 > `scripts/eval_algebra_mutants.py`。 「algebra 名の関数が法則違反している」公開
