@@ -25,10 +25,10 @@ passes. The guarantee has three conditions, all required:
   only; a broken associativity on `merge` is not checked);
 - strength is two-tier — **hypothesis sampling = probabilistic confidence, not
   proof** (a violation that only shows on rare inputs can be missed); **CrossHair
-  (opt-in) = deterministic proof, but bounded** to binary functions, for **5 of
+  (opt-in) = deterministic proof, but bounded** to binary functions, for **7 of
   14 law templates** (associativity, semigroup-assoc, commutativity, additive
-  identity, binary idempotence; the other 9 — functor/monad/foldable/eq — stay
-  sampling-only).
+  identity, binary idempotence, eq-reflexivity, eq-symmetry; the other 7 —
+  functor/monad/foldable — stay sampling-only).
 
 Precise sentence: *Phase 2 guarantees that a recognized-name function satisfies
 its inferred law, at sampling confidence (or CrossHair proof where applicable).*
@@ -89,7 +89,7 @@ On AF's own 46-sample corpus: full-stack detection **28/46 (61%)**.
 | Inferrer keyword coverage (`mean` / `compute` / `process` currently skipped) | small — add keywords (synonyms `add`/`plus`/`total`/`accumulate` already added) |
 | More algebraic laws (beyond the current 13) | small–medium |
 | Type-checking (pyright) | **already available** via the hybrid / Docker mode |
-| SMT proof (CrossHair) of binary laws | **already available** opt-in (`AF_CROSSHAIR`); now covers **5 of 14 law templates** (assoc, semigroup-assoc, commutativity, additive identity, binary idempotence — thickened 3→5 on 2026-05-22). Cost **type-dependent — ~0.3 s for int, ~8 s for str/dict/complex** (measured 2026-05-21). Works on int/float/str/dict/branches/loops/recursion; functor/monad/foldable/eq laws still hypothesis-only |
+| SMT proof (CrossHair) of binary laws | **already available** opt-in (`AF_CROSSHAIR`); now covers **7 of 14 law templates** (assoc, semigroup-assoc, commutativity, additive identity, binary idempotence, eq-reflexivity, eq-symmetry — thickened 3→5→7 on 2026-05-22/24). Cost **type-dependent — ~0.3 s for int, ~8 s for str/dict/complex** (measured 2026-05-21). Works on int/float/str/dict/branches/loops/recursion; functor/monad/foldable laws still hypothesis-only |
 | Other languages (TypeScript / Rust) | large — different ecosystems; Rust's trait system fits the algebra axis best |
 
 ## ③ Structurally out of scope (measured misses)

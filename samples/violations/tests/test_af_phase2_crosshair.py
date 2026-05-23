@@ -161,3 +161,34 @@ def test_crosshair_agrees_with_exhaustive_oracle() -> None:
             assert ch == oracle, f"{f.__name__}: CrossHair={ch} oracle={oracle}"
     finally:
         os.environ.pop("AF_CROSSHAIR", None)
+
+
+def test_crosshair_eq_laws_agree_with_oracle() -> None:
+    """D1 非チェリーピック: eq_reflexivity/eq_symmetry の CrossHair 判定が oracle と一致.
+
+    成立する述語 (==) と 違反する述語 (<) の両方で、 CrossHair と exhaustive_verify が
+    全件一致することを固定 (1 述語の手書きでなく、 正/誤両方を含む)。
+    """
+    from af_phase2.exhaustive import exhaustive_verify
+    from af_phase2.inferrer import law
+
+    os.environ["AF_CROSSHAIR"] = "1"
+    try:
+        @law("eq_reflexivity", "eq_symmetry")
+        def eq_good(a: int, b: int) -> bool:
+            return a == b  # 反射的 + 対称的
+
+        @law("eq_reflexivity", "eq_symmetry")
+        def eq_lt(a: int, b: int) -> bool:
+            return a < b  # 反射的でない (a<a=False)・対称的でない
+
+        for lawid in ("eq_reflexivity", "eq_symmetry"):
+            ch_good = any(v["law_id"] == lawid for v in verify(eq_good))
+            assert ch_good == (exhaustive_verify(eq_good, lawid) is not None)
+            assert not ch_good, f"eq_good should satisfy {lawid}"
+
+            ch_lt = any(v["law_id"] == lawid for v in verify(eq_lt))
+            assert ch_lt == (exhaustive_verify(eq_lt, lawid) is not None)
+            assert ch_lt, f"eq_lt should violate {lawid}"
+    finally:
+        os.environ.pop("AF_CROSSHAIR", None)

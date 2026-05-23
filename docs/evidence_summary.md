@@ -155,10 +155,10 @@ Wide measurement on the entire 46-sample manifest:
 ### 3-5. Proof depth: deterministic (CrossHair) vs sampled (hypothesis)
 
 Detection above is mostly **hypothesis sampling** (probabilistic confidence). The
-**deterministically-proven** core is narrower: **5 of 14 law templates** have a
+**deterministically-proven** core is narrower: **7 of 14 law templates** have a
 CrossHair SMT-proof path on binary functions — associativity, semigroup-assoc,
-commutativity, additive identity, binary idempotence (thickened 3→5 on 2026-05-22
-by adding identity + idempotence). The other 9 (functor / monad / foldable / eq)
+commutativity, additive identity, binary idempotence, eq-reflexivity, eq-symmetry
+(thickened 3→5→7 on 2026-05-22/24). The other 7 (functor / monad / foldable)
 remain sampling-only. Guarded by `test_af_phase2_proof_coverage.py`. This is the
 honest "deep proven core" number — see [limitations.md](limitations.md) "deterministic
 island".

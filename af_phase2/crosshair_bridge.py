@@ -43,6 +43,10 @@ _LAW_CONTRACT: dict[str, tuple[str, str, str]] = {
     # binary idempotence: combining a value with itself yields itself (max/min/
     # union/gcd…). No identity element needed → clean for the binary SMT model.
     "idempotence": ("idem", "a", "op(a, a) == a"),
+    # Eq laws: a binary->bool predicate. reflexivity = eq(a,a) holds;
+    # symmetry = eq(a,b) == eq(b,a). Both proof-checkable on the binary model.
+    "eq_reflexivity": ("eqrefl", "a", "op(a, a)"),
+    "eq_symmetry": ("eqsym", "a, b", "op(a, b) == op(b, a)"),
 }
 
 

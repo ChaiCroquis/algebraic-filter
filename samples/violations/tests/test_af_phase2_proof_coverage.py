@@ -17,13 +17,15 @@ from af_phase2.crosshair_bridge import _LAW_CONTRACT  # noqa: E402
 from af_phase2.law_templates import LAW_REGISTRY  # noqa: E402
 
 # CrossHair で決定論的に証明できる法則 (binary 関数が対象)。 2026-05-22 に
-# identity + idempotence を追加し 3 -> 5 へ厚くした。
+# identity + idempotence を追加し 3 -> 5、 2026-05-24 に eq 則 2 つを追加し 5 -> 7。
 _PROVABLE = {
     "monoid_associativity",
     "semigroup_associativity",
     "commutativity",
     "monoid_identity",
     "idempotence",
+    "eq_reflexivity",
+    "eq_symmetry",
 }
 
 
@@ -38,12 +40,12 @@ def test_provable_is_subset_of_all_law_templates() -> None:
 
 
 def test_proof_coverage_ratio_documented() -> None:
-    """文書同期: 5/14 が証明済み、 残り 9 はサンプリングのみ.
+    """文書同期: 7/14 が証明済み、 残り 7 はサンプリングのみ.
 
     この数が変わったら evidence_summary / limitations の記述も更新すること。
     """
     provable = len(_LAW_CONTRACT)
     total = len(LAW_REGISTRY)
-    assert provable == 5, provable
+    assert provable == 7, provable
     assert total == 14, total
-    assert total - provable == 9  # hypothesis-sampling-only
+    assert total - provable == 7  # hypothesis-sampling-only

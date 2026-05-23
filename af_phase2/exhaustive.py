@@ -40,6 +40,14 @@ def exhaustive_verify(
             for a in vals:
                 if func(a, 0) != a or func(0, a) != a:
                     return {"law_id": law_id, "counterexample": f"a={a}"}
+        elif law_id == "eq_reflexivity":
+            for a in vals:
+                if not func(a, a):
+                    return {"law_id": law_id, "counterexample": f"a={a}"}
+        elif law_id == "eq_symmetry":
+            for a, b in itertools.product(vals, repeat=2):
+                if func(a, b) != func(b, a):
+                    return {"law_id": law_id, "counterexample": f"a={a}, b={b}"}
     except Exception as exc:  # noqa: BLE001 - any raise within the domain is itself a defect
         return {"law_id": law_id, "counterexample": f"raised {type(exc).__name__}"}
     return None

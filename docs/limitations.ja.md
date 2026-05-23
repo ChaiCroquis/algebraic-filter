@@ -23,9 +23,9 @@ Phase 2 は関数が代数 *法則* を満たすか (例: `sum` が結合的、 
   の結合律が壊れていても対象外);
 - 強さは 2 段階 — **hypothesis sampling = 確率的な確信であって証明でない** (= 稀な
   入力でだけ破れる violation は取りこぼし得る); **CrossHair (opt-in) = 決定論的
-  証明、 ただし binary 関数の 14 法則テンプレ中 5 個に限定** (結合律・semigroup 結合・
-  可換律・additive identity・binary 冪等。 残り 9 = functor/monad/foldable/eq は
-  sampling のみ)。
+  証明、 ただし binary 関数の 14 法則テンプレ中 7 個に限定** (結合律・semigroup 結合・
+  可換律・additive identity・binary 冪等・eq 反射律・eq 対称律。 残り 7 =
+  functor/monad/foldable は sampling のみ)。
 
 正確な一文: *Phase 2 は、 認識名の関数が推論された法則を満たすことを、 sampling
 信頼度 (該当すれば CrossHair 証明) で保証する。* 強いが条件付き・narrow。
@@ -83,7 +83,7 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 | inferrer keyword 被覆 (`mean` / `compute` / `process` が現状 skip) | 小 — keyword 追記 (`add`/`plus`/`total`/`accumulate` は追加済) |
 | 代数法則の追加 (現 13 を超えて) | 小〜中 |
 | 型検査 (pyright) | **既に対応済** — hybrid / Docker mode 経由 |
-| SMT 証明 (CrossHair) で binary 法則 | **opt-in で対応済** (`AF_CROSSHAIR`)。 **14 法則テンプレ中 5 個**を証明 (結合・semigroup 結合・可換・additive identity・binary 冪等 — 2026-05-22 に 3→5 へ厚く)。 コストは **型依存 — int ~0.3s / str/dict/複雑型 ~8s** (2026-05-21 実測)。 int/float/str/dict/分岐/ループ/再帰で動作、 functor/monad/foldable/eq は hypothesis のみ |
+| SMT 証明 (CrossHair) で binary 法則 | **opt-in で対応済** (`AF_CROSSHAIR`)。 **14 法則テンプレ中 7 個**を証明 (結合・semigroup 結合・可換・additive identity・binary 冪等・eq 反射律・eq 対称律 — 2026-05-22/24 に 3→5→7 へ厚く)。 コストは **型依存 — int ~0.3s / str/dict/複雑型 ~8s** (2026-05-21 実測)。 int/float/str/dict/分岐/ループ/再帰で動作、 functor/monad/foldable は hypothesis のみ |
 | 他言語 (TypeScript / Rust) | 大 — 別生態系。 Rust の trait system が代数軸に最適合 |
 
 ## ③ 構造的に対応不可 (= 実測 見逃し)
