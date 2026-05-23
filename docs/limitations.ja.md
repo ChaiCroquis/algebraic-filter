@@ -129,6 +129,18 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 - **false positive**: 正しく `merge` と名付けたが意図的に非可換 (= 左優先 merge) な
   関数を誤検出しうる。
 
+> **精度修正 — 推測でなく宣言を検証 (P1、 2026-05-22)**: 両エラーの根因は法則を
+> *名前から推測* すること。 修正は *宣言された* 法則を検証すること。 デコレータ 2 つ
+> (`af_phase2.inferrer`):
+> - `@law("commutativity")` — 宣言した法則を **名前非依存** で検証 (= FN 根治: `thingy`
+>   のような非認識名でも効く)。
+> - `@no_law` (or `@law()`) — 「この関数は法則を持たない」 宣言で名前 heuristic を抑止
+>   (= FP 根治: 意図的に非可換な `merge` がもう誤検出されない)。
+>
+> 宣言は名前 heuristic に優先し、 未宣言は従来どおり fallback (後方互換)。 これで
+> Phase 2 は「推測して祈る」から「宣言を検証する」 = 形式手法の契約モデルへ移行。
+> `test_af_phase2_declared_laws.py` で固定 (FP抑止 + FN修正 + 優先 + 後方互換)。
+
 > **中立 mutation benchmark (home-field bias なし)、 2026-05-21 実測** —
 > `scripts/eval_algebra_mutants.py`。 「algebra 名の関数が法則違反している」公開
 > corpus は存在しない (調査で確認) ため、 *機械的 mutation* benchmark とした:

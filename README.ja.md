@@ -208,7 +208,7 @@ python scripts/ab_automation_wide.py
 - [hooks/posttool_af_check.py](hooks/posttool_af_check.py) — Phase 1 ruff + Phase 3 AST + Phase 4 structured feedback の 3 layer 統合
 
 ### Phase 2: 代数法則 PBT 自動生成 ([af_phase2/](af_phase2/))
-- `inferrer.py` — 関数名 → 法則 ID 推論を **word-boundary token** 一致 (substring でなく) + intent synonym で実施、 型 strategy 自動選択
+- `inferrer.py` — 法則推論。 **精密 path (P1): `@law("commutativity")` / `@no_law` で法則を宣言** — 宣言は直接検証され名前推測に優先 (名前非依存・推測由来の誤検出なし)。 未宣言時の fallback: 関数名 **word-boundary token** 一致 (substring でなく) + intent synonym + 型 strategy 自動選択
 - `law_templates.py` — 13 法則テンプレ (Monoid / Functor / Foldable / Monad / Semigroup / Eq / Commutativity / Idempotence)
 - `generator.py` — `auto_test()` / `auto_test_monad_pair()` / `auto_test_class_idempotence()` API
 - `crosshair_bridge.py` — **opt-in** (`AF_CROSSHAIR`/`crosshair_verify`) で binary 関数の結合/可換律を CrossHair SMT **証明** (= 決定論、 sampling が見逃す稀値違反を捕捉、 FP ゼロ実測済)。 default OFF。

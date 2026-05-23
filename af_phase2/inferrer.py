@@ -20,7 +20,7 @@ _TYPE_TO_STRATEGY = {
 }
 
 
-def infer_strategy_for_annotation(annotation: Any) -> st.SearchStrategy:
+def infer_strategy_for_annotation(annotation: Any) -> st.SearchStrategy:  # noqa: ANN401
     """型注釈 → hypothesis strategy. generic (list[T]) も unwrap."""
     if annotation is inspect.Parameter.empty:
         return _TYPE_TO_STRATEGY[int]
@@ -105,12 +105,43 @@ def _name_lower(func: Callable) -> str:
     return getattr(func, "__name__", "").lower()
 
 
-def infer_laws(func: Callable) -> list[str]:
-    """関数名から期待法則 ID 集合を推論. word-token 一致 heuristic.
+# 法則「宣言」 API (精度 P1: 名前 heuristic の推測を、 宣言の検証へ置換)。
+# 宣言された法則は infer_laws で最優先採用される (= 名前推測の両側エラーを根治):
+#   @law("commutativity")  -> その関数の commutativity を決定論検証 (名前非依存 = FN 改善)
+#   @law()  /  @no_law     -> 「法則を持たない」 宣言 = 名前 heuristic を抑止 (FP 根治)
+# 未宣言の関数は従来どおり名前 heuristic に fallback (後方互換)。
+_AF_LAWS_ATTR = "__af_laws__"
 
-    substring でなく word token で一致 (= "consume" は "sum" に誤マッチしない)。
-    intent proxy としての精度を保つ (= 名前が法則を意図しているかの判定)。
+
+def law(*law_ids: str) -> Callable[[Callable], Callable]:
+    """関数が満たすべき代数法則を宣言するデコレータ (law_ids は LAW_REGISTRY key)."""
+
+    def deco(func: Callable) -> Callable:
+        declared = list(getattr(func, _AF_LAWS_ATTR, []))
+        for lid in law_ids:
+            if lid not in declared:
+                declared.append(lid)
+        func.__af_laws__ = declared  # type: ignore[attr-defined]
+        return func
+
+    return deco
+
+
+def no_law(func: Callable) -> Callable:
+    """「この関数は (名前が示唆しても) 代数法則を持たない」 宣言 = 名前推測を抑止."""
+    func.__af_laws__ = []  # type: ignore[attr-defined]
+    return func
+
+
+def infer_laws(func: Callable) -> list[str]:
+    """期待法則 ID 集合を推論. 宣言があれば宣言を最優先、 なければ名前 heuristic.
+
+    宣言 (`@law(...)` / `@no_law`) は推測を上書きする (= 精度 P1: 推測→宣言の検証)。
+    未宣言時のみ word-token 一致 heuristic に fallback (= "consume" は "sum" に誤マッチしない)。
     """
+    if hasattr(func, _AF_LAWS_ATTR):
+        # 宣言を最優先 (空 list = no_law = 検証対象なし = 名前推測 FP の根治)
+        return list(dict.fromkeys(getattr(func, _AF_LAWS_ATTR)))
     tokens = _name_tokens(_name_lower(func))
     laws: list[str] = []
     for keyword, law_ids in _NAME_TO_LAWS.items():

@@ -219,7 +219,7 @@ Results saved to `docs/_ab_measurement/log_auto_*.json`.
 - [hooks/posttool_af_check.py](hooks/posttool_af_check.py) — 3-layer integration: Phase 1 ruff + Phase 3 AST + Phase 4 structured feedback
 
 ### Phase 2: Algebraic-law PBT auto-generation ([af_phase2/](af_phase2/))
-- `inferrer.py` — Function name → law ID inference via **word-boundary token** match (not substring) + intent synonyms; type-strategy auto-selection
+- `inferrer.py` — Law inference. **Precise path (P1): declare laws with `@law("commutativity")` / `@no_law`** — declarations are verified directly and take priority (name-independent, no guess-based false positives). Fallback for undeclared functions: word-boundary token name match (not substring) + intent synonyms; type-strategy auto-selection
 - `law_templates.py` — 13 law templates (Monoid / Functor / Foldable / Monad / Semigroup / Eq / Commutativity / Idempotence)
 - `generator.py` — `auto_test()` / `auto_test_monad_pair()` / `auto_test_class_idempotence()` APIs
 - `crosshair_bridge.py` — **opt-in** (`AF_CROSSHAIR`/`crosshair_verify`) CrossHair SMT **proof** of associativity/commutativity for binary functions (deterministic; catches rare-value violations sampling misses, FP-zero — measured). Default OFF.
