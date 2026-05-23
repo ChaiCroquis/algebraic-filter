@@ -141,6 +141,15 @@ S0-1〜S0-5 全達成 → Phase 1 着手承認 (chai Sovereign 判断 2026-05-19
 
 → hypothesis-target subset では 100% detect、 wide では 21.7% (= AF Phase 2 の適用 niche は関数名駆動の代数法則系に特化)
 
+### 3-5. 証明の深さ: 決定論 (CrossHair) vs サンプリング (hypothesis)
+
+上の検出は大半が **hypothesis サンプリング** (確率的確信)。 **決定論的に証明された**
+核はもっと狭い: **14 法則テンプレ中 5 個**が binary 関数で CrossHair SMT 証明可能
+(結合・semigroup 結合・可換・additive identity・binary 冪等 — 2026-05-22 に identity +
+idempotence 追加で 3→5)。 残り 9 (functor / monad / foldable / eq) は sampling のみ。
+`test_af_phase2_proof_coverage.py` で固定。 これが honest な「証明された深い核」の数値
+([limitations.ja.md](limitations.ja.md) 「決定論の島」参照)。
+
 ---
 
 ## 4. Phase 3 静的 + 実測 coverage

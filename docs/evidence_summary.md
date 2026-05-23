@@ -152,6 +152,17 @@ Wide measurement on the entire 46-sample manifest:
 
 → 100% detection in hypothesis-target subset; 21.7% in wide measurement (AF Phase 2 niche is specialized for keyword-driven algebraic laws)
 
+### 3-5. Proof depth: deterministic (CrossHair) vs sampled (hypothesis)
+
+Detection above is mostly **hypothesis sampling** (probabilistic confidence). The
+**deterministically-proven** core is narrower: **5 of 14 law templates** have a
+CrossHair SMT-proof path on binary functions — associativity, semigroup-assoc,
+commutativity, additive identity, binary idempotence (thickened 3→5 on 2026-05-22
+by adding identity + idempotence). The other 9 (functor / monad / foldable / eq)
+remain sampling-only. Guarded by `test_af_phase2_proof_coverage.py`. This is the
+honest "deep proven core" number — see [limitations.md](limitations.md) "deterministic
+island".
+
 ---
 
 ## 4. Phase 3 static + runtime coverage
