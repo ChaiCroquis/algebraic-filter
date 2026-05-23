@@ -7,10 +7,11 @@ random sampling — catching rare-value violations that hypothesis misses
 (measured 2026-05-21: caught a==999983 associativity/commutativity bugs that
 bounded sampling did not).
 
-Scope (verified): binary `(T, T) -> T` functions, associativity +
-commutativity. Identity / functor / monad laws are NOT covered (identity needs
-the identity element; higher-order laws need richer contracts). Gracefully
-no-ops if crosshair-tool is not installed or the function is out of scope.
+Scope (verified): binary `(T, T) -> T` functions — associativity, commutativity,
+and additive identity (`op(a,0)==a==op(0,a)`, the natural identity for additive
+monoids). Functor / monad laws are NOT covered (they need richer contracts).
+Gracefully no-ops if crosshair-tool is not installed or the function is out of
+scope.
 
 Determinism: CrossHair uses an SMT solver — proofs/counterexamples are
 deterministic (no random seed), unlike hypothesis sampling.
@@ -29,10 +30,19 @@ from typing import Any, Callable
 ENV_GATE = "AF_CROSSHAIR"
 
 # law_id -> (checker suffix, params, boolean expr over the function aliased as `op`)
+# Note: monoid_identity here is the BINARY additive-identity law (e = 0): for a
+# binary numeric op, op(a, 0) == a == op(0, a). This is the natural identity for
+# additive monoids (sum/add/total); a non-additive binary op declaring
+# monoid_identity would need a different element (out of scope — declare assoc/
+# commut instead, or use the hypothesis path).
 _LAW_CONTRACT: dict[str, tuple[str, str, str]] = {
     "monoid_associativity": ("assoc", "a, b, c", "op(op(a, b), c) == op(a, op(b, c))"),
     "semigroup_associativity": ("assoc", "a, b, c", "op(op(a, b), c) == op(a, op(b, c))"),
     "commutativity": ("commut", "a, b", "op(a, b) == op(b, a)"),
+    "monoid_identity": ("identity", "a", "op(a, 0) == a and op(0, a) == a"),
+    # binary idempotence: combining a value with itself yields itself (max/min/
+    # union/gcd…). No identity element needed → clean for the binary SMT model.
+    "idempotence": ("idem", "a", "op(a, a) == a"),
 }
 
 
@@ -92,6 +102,11 @@ def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
         src = textwrap.dedent(inspect.getsource(func))
     except (OSError, TypeError):
         return []
+    # AF 宣言デコレータ (@law / @no_law) は純メタデータ。 standalone temp module には
+    # その定義が無く NameError になるため除去 (証明には無害、 op 本体は不変)。
+    src = "\n".join(
+        ln for ln in src.splitlines() if not re.match(r"\s*@(law|no_law)\b", ln)
+    )
     fname = func.__name__
 
     parts = [src, f"op = {fname}\n"]

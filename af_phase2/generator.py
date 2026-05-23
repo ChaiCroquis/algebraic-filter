@@ -5,6 +5,7 @@ Phase 2 後半で「test file 出力」 path に拡張予定。
 """
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable
 
 from af_phase2.inferrer import (
@@ -13,6 +14,19 @@ from af_phase2.inferrer import (
     infer_strategies_for_func,
 )
 from af_phase2.law_templates import LAW_REGISTRY
+
+
+def _positional_arity(func: Callable) -> int:
+    """positional 引数の数 (arity-aware dispatch 用、 取得失敗時は -1)."""
+    try:
+        sig = inspect.signature(func)
+    except (ValueError, TypeError):
+        return -1
+    return sum(
+        1
+        for p in sig.parameters.values()
+        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)
+    )
 
 
 class PropertyTestResult:
@@ -48,11 +62,17 @@ def auto_test(func: Callable, *, extra_args: dict[str, Any] | None = None) -> li
                 prop = template(func, identity)
             elif law_id == "commutativity":
                 prop = template(func, element_strategy)
+            elif law_id == "idempotence":
+                # unary idempotence template (op(op(x))==op(x))。 binary 関数に当てると
+                # arity 不一致で ERROR (= 偽アラーム) になるため、 unary のみで実行。
+                # binary idempotence (op(a,a)==a) は CrossHair (crosshair_bridge) の担当。
+                if _positional_arity(func) != 1:
+                    continue
+                prop = template(func)
             elif law_id in (
                 "functor_identity",
                 "functor_compose",
                 "monoid_associativity",
-                "idempotence",
             ):
                 prop = template(func)
             else:

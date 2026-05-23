@@ -73,3 +73,18 @@ def test_undeclared_falls_back_to_name_heuristic() -> None:
         return sum(xs)
 
     assert "monoid_identity" in infer_laws(total), infer_laws(total)
+
+
+def test_binary_idempotence_declared_no_hypothesis_error() -> None:
+    """精度 P2-B2: binary 関数に idempotence を宣言しても hypothesis 経路が ERROR しない.
+
+    unary 冪等テンプレ (op(op(x))==op(x)) を binary に当てると arity 不一致で ERROR に
+    なっていた。 generator が arity-aware に skip し、 binary 冪等は CrossHair に委ねる。
+    """
+
+    @law("idempotence")
+    def combine(a: int, b: int) -> int:
+        return a + b
+
+    errors = [r for r in auto_test(combine) if r.status == "ERROR"]
+    assert errors == [], f"binary idempotence must not ERROR in hypothesis path, got {errors}"

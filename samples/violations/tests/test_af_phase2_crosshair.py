@@ -69,3 +69,63 @@ def test_crosshair_on_fp_zero_on_correct() -> None:
         assert verify(my_sum) == [], "correct addition must not be flagged (FP-zero)"
     finally:
         os.environ.pop("AF_CROSSHAIR", None)
+
+
+def test_crosshair_proves_identity_violation() -> None:
+    """精度 P2-B1: identity を SMT 証明。 結合的だが単位元を破る op を捕捉.
+
+    a+b+1 は結合的 (= assoc は通る) が op(a,0)=a+1 != a で additive identity を破る。
+    identity を sampling でなく証明で捕捉できることを固定。
+    """
+    os.environ["AF_CROSSHAIR"] = "1"
+    try:
+        def my_sum(a: int, b: int) -> int:  # 'sum' -> monoid_identity 推論、 +1 で単位元違反
+            return a + b + 1
+
+        violations = verify(my_sum)
+        assert any(v["law_id"] == "monoid_identity" for v in violations), violations
+    finally:
+        os.environ.pop("AF_CROSSHAIR", None)
+
+
+def test_crosshair_identity_fp_zero_on_correct_add() -> None:
+    """正しい加算は additive identity を満たす -> identity 違反は報告されない (FP-zero)."""
+    os.environ["AF_CROSSHAIR"] = "1"
+    try:
+        def my_sum(a: int, b: int) -> int:
+            return a + b
+
+        assert all(v["law_id"] != "monoid_identity" for v in verify(my_sum)), "correct add: no identity FP"
+    finally:
+        os.environ.pop("AF_CROSSHAIR", None)
+
+
+def test_crosshair_proves_binary_idempotence_violation() -> None:
+    """精度 P2-B2: binary idempotence (op(a,a)==a) を SMT 証明。 宣言経由で検証."""
+    from af_phase2.inferrer import law
+
+    os.environ["AF_CROSSHAIR"] = "1"
+    try:
+        @law("idempotence")
+        def combine(a: int, b: int) -> int:
+            return a + b  # op(a,a)=2a != a (a!=0) -> 非冪等
+
+        violations = verify(combine)
+        assert any(v["law_id"] == "idempotence" for v in violations), violations
+    finally:
+        os.environ.pop("AF_CROSSHAIR", None)
+
+
+def test_crosshair_binary_idempotence_fp_zero() -> None:
+    """冪等な binary op (max) は flag されない (FP-zero)."""
+    from af_phase2.inferrer import law
+
+    os.environ["AF_CROSSHAIR"] = "1"
+    try:
+        @law("idempotence")
+        def mymax(a: int, b: int) -> int:
+            return max(a, b)  # op(a,a)=a -> 冪等
+
+        assert all(v["law_id"] != "idempotence" for v in verify(mymax)), "idempotent max: no FP"
+    finally:
+        os.environ.pop("AF_CROSSHAIR", None)
