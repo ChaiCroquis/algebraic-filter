@@ -9,20 +9,45 @@ identity。 反例があれば dict、 なければ None を返す。
 """
 from __future__ import annotations
 
+import inspect
 import itertools
+from collections.abc import Sequence
 from typing import Callable
 
 BinaryIntOp = Callable[[int, int], int]
 
 
-def exhaustive_verify(
-    func: BinaryIntOp, law_id: str, *, bound: int = 5
-) -> dict[str, str] | None:
-    """binary int 関数の法則を [-bound, bound] の全数で検証. 反例 dict or None.
+def complete_domain(func: Callable[..., object]) -> tuple[object, ...] | None:
+    """引数が全て *有限型* (現状 bool) 注釈なら、 その型の完全ドメインを返す.
 
-    全数なので、 この有限ドメイン内では「証明」 (決定論・取りこぼしなし)。
+    bool なら (False, True)。 完全ドメインで exhaustive すれば「有界」 でなく
+    打ち切りなしの **完全証明** になる (型全体を尽くすため)。 無限型 (int 等) は None。
     """
-    vals = range(-bound, bound + 1)
+    try:
+        sig = inspect.signature(func)
+    except (ValueError, TypeError):
+        return None
+    params = [
+        p
+        for p in sig.parameters.values()
+        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)
+    ]
+    # `from __future__ import annotations` (PEP 563) 下では注釈が文字列 "bool" に
+    # なるため、 bool 型と文字列 "bool" の両方を許容する。
+    if params and all(p.annotation is bool or p.annotation == "bool" for p in params):
+        return (False, True)
+    return None
+
+
+def exhaustive_verify(
+    func: BinaryIntOp, law_id: str, *, bound: int = 5, domain: Sequence[object] | None = None
+) -> dict[str, str] | None:
+    """binary 関数の法則を全数で検証. 反例 dict or None.
+
+    domain 指定時はその全数 (有限型なら **完全証明**)、 未指定なら int の [-bound, bound]
+    (有界証明 = この域内のみ保証)。 いずれも決定論・取りこぼしなし。
+    """
+    vals: Sequence[object] = list(domain) if domain is not None else range(-bound, bound + 1)
     try:
         if law_id == "commutativity":
             for a, b in itertools.product(vals, repeat=2):

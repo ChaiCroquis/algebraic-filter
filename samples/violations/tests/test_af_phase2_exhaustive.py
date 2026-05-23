@@ -13,7 +13,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from af_phase2.exhaustive import exhaustive_verify  # noqa: E402
+from af_phase2.exhaustive import complete_domain, exhaustive_verify  # noqa: E402
+
+_BOOL = (False, True)
 
 
 def test_exhaustive_catches_commutativity_violation() -> None:
@@ -47,3 +49,56 @@ def test_exhaustive_is_deterministic() -> None:
     r1 = exhaustive_verify(operator.sub, "commutativity")
     r2 = exhaustive_verify(operator.sub, "commutativity")
     assert r1 == r2 and r1 is not None
+
+
+# --- D2: bool/有限型は完全ドメインで *完全証明* (有界でなく打ち切りなし) ---
+
+
+def test_complete_domain_detects_bool_only() -> None:
+    """complete_domain は bool 注釈の関数に (False, True)、 int には None."""
+
+    def boolop(a: bool, b: bool) -> bool:
+        return a and b
+
+    def intop(a: int, b: int) -> int:
+        return a + b
+
+    assert complete_domain(boolop) == _BOOL
+    assert complete_domain(intop) is None
+
+
+def test_bool_commutativity_complete_proof() -> None:
+    """bool 全 4 通り = 型全体を尽くす完全証明 (and は可換、 非対称 op は反証)."""
+
+    def myand(a: bool, b: bool) -> bool:
+        return a and b
+
+    def asym(a: bool, b: bool) -> bool:
+        return a and not b
+
+    assert exhaustive_verify(myand, "commutativity", domain=_BOOL) is None
+    assert exhaustive_verify(asym, "commutativity", domain=_BOOL) is not None
+
+
+def test_bool_idempotence_complete_proof() -> None:
+    """bool 完全証明: or は冪等 (a or a == a)、 xor は非冪等 (True^True=False)."""
+
+    def myor(a: bool, b: bool) -> bool:
+        return a or b
+
+    def xor(a: bool, b: bool) -> bool:
+        return a != b
+
+    assert exhaustive_verify(myor, "idempotence", domain=_BOOL) is None
+    assert exhaustive_verify(xor, "idempotence", domain=_BOOL) is not None
+
+
+def test_bool_complete_domain_drives_verification() -> None:
+    """complete_domain で取得した完全ドメインで検証する統合 (有限型→完全証明の経路)."""
+
+    def myand(a: bool, b: bool) -> bool:
+        return a and b
+
+    dom = complete_domain(myand)
+    assert dom is not None
+    assert exhaustive_verify(myand, "commutativity", domain=dom) is None
