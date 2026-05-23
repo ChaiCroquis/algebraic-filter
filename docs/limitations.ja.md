@@ -85,6 +85,7 @@ AF 自前 46 sample で full-stack 検出 **28/46 (61%)**。
 | 代数法則の追加 (現 13 を超えて) | 小〜中 |
 | 型検査 (pyright) | **既に対応済** — hybrid / Docker mode 経由 |
 | SMT 証明 (CrossHair) で binary 法則 | **opt-in で対応済** (`AF_CROSSHAIR`)。 **14 法則テンプレ中 7 個**を証明 (結合・semigroup 結合・可換・単位元〔既定は加法 0、 `@law("monoid_identity", identity=e)` で乗法 e=1 / 文字列 e="" 等も〕・binary 冪等・eq 反射律・eq 対称律 — 2026-05-22/24 に 3→5→7 へ厚く)。 コストは **型依存 — int ~0.3s / str/dict/複雑型 ~8s** (2026-05-21 実測)。 int/float/str/dict/分岐/ループ/再帰で動作、 functor/monad/foldable は hypothesis のみ |
+| 契約証明 (事前/事後条件) | **opt-in で対応済** (D5): `@contract(post="result >= 0", pre="b >= 0")` を CrossHair (`verify_contract`) で証明 — 決定論検証を代数法則の外の任意の決定可能性質 (例 `len(out) == len(inp)`) へ拡張。 同 SMT エンジン + コスト特性 |
 | 他言語 (TypeScript / Rust) | 大 — 別生態系。 Rust の trait system が代数軸に最適合 |
 
 ## ③ 構造的に対応不可 (= 実測 見逃し)

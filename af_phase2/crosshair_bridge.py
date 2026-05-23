@@ -88,6 +88,89 @@ def _binary_param_type(func: Callable[..., Any]) -> str | None:
     return getattr(ann, "__name__", "int")
 
 
+def _strip_af_decorators(src: str) -> str:
+    """AF 宣言デコレータ (@law / @no_law / @contract) 行を除去.
+
+    純メタデータで、 standalone temp module には定義が無く NameError になるため
+    (証明には無害、 関数本体は不変)。
+    """
+    return "\n".join(
+        ln for ln in src.splitlines() if not re.match(r"\s*@(law|no_law|contract)\b", ln)
+    )
+
+
+def _typed_params(func: Callable[..., Any]) -> tuple[str, str]:
+    """(typed signature, arg names) を返す. 注釈は PEP563 文字列も型も許容、 既定 int."""
+    sig = inspect.signature(func)
+    params = [
+        p
+        for p in sig.parameters.values()
+        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)
+    ]
+
+    def ann_name(ann: object) -> str:
+        if ann is inspect.Parameter.empty:
+            return "int"
+        if isinstance(ann, str):
+            return ann
+        return getattr(ann, "__name__", "int")
+
+    typed = ", ".join(f"{p.name}: {ann_name(p.annotation)}" for p in params)
+    names = ", ".join(p.name for p in params)
+    return typed, names
+
+
+def verify_contract(func: Callable[..., Any]) -> list[dict[str, str]]:
+    """@contract(post=..., pre=...) で宣言された事後条件を CrossHair で証明 (D5).
+
+    任意の決定可能性質 (result>=0, len(out)==len(inp) 等) を法則の外で検証。
+    反例があれば [{law_id: "contract", counterexample}]、 無ければ []。
+    """
+    if not is_enabled() or not _crosshair_available():
+        return []
+    spec = getattr(func, "__af_contract__", None)
+    if not spec or not spec.get("post"):
+        return []
+    try:
+        src = _strip_af_decorators(textwrap.dedent(inspect.getsource(func)))
+        typed, names = _typed_params(func)
+    except (OSError, TypeError, ValueError):
+        return []
+
+    post = spec["post"]
+    pre = spec.get("pre")
+    fname = func.__name__
+    guard = f"    if not ({pre}):\n        return True\n" if pre else ""
+    check = (
+        f"def check_contract({typed}) -> bool:\n"
+        f'    """\n    post: __return__\n    """\n'
+        f"{guard}"
+        f"    result = {fname}({names})\n"
+        f"    return bool({post})\n"
+    )
+    code = f"{src}\n{check}"
+    tmp = Path(tempfile.mkdtemp()) / "af_ch_contract.py"
+    tmp.write_text(code, encoding="utf-8")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "crosshair", "check", str(tmp), "--per_condition_timeout=8"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+    out = (result.stdout or "") + (result.stderr or "")
+    violations: list[dict[str, str]] = []
+    for line in out.splitlines():
+        if "false when calling" in line and "check_contract" in line:
+            m = re.search(r"check_contract\((.*?)\)", line)
+            violations.append({"law_id": "contract", "counterexample": (m.group(1) if m else "")[:120]})
+    return violations
+
+
 def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
     """CrossHair-proved law violations for a binary function (empty if none/disabled).
 
@@ -109,11 +192,7 @@ def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
         src = textwrap.dedent(inspect.getsource(func))
     except (OSError, TypeError):
         return []
-    # AF 宣言デコレータ (@law / @no_law) は純メタデータ。 standalone temp module には
-    # その定義が無く NameError になるため除去 (証明には無害、 op 本体は不変)。
-    src = "\n".join(
-        ln for ln in src.splitlines() if not re.match(r"\s*@(law|no_law)\b", ln)
-    )
+    src = _strip_af_decorators(src)
     fname = func.__name__
 
     parts = [src, f"op = {fname}\n"]

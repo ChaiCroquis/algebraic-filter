@@ -140,6 +140,22 @@ def no_law(func: Callable) -> Callable:
     return func
 
 
+def contract(*, post: str, pre: str | None = None) -> Callable[[Callable], Callable]:
+    """事前/事後条件を宣言するデコレータ (CrossHair で証明 = 決定論拡張 D5).
+
+    post / pre は関数の引数名 + (post では) `result` を参照する式文字列:
+      @contract(post="result >= 0")
+      @contract(pre="b >= 0", post="result >= a")
+    検証は af_phase2.crosshair_bridge.verify_contract が担う。
+    """
+
+    def deco(func: Callable) -> Callable:
+        func.__af_contract__ = {"post": post, "pre": pre}  # type: ignore[attr-defined]
+        return func
+
+    return deco
+
+
 def infer_laws(func: Callable) -> list[str]:
     """期待法則 ID 集合を推論. 宣言があれば宣言を最優先、 なければ名前 heuristic.
 
