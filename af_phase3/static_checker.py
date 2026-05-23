@@ -42,6 +42,10 @@ class _DataMovementVisitor(ast.NodeVisitor):
         # precision — avoids flagging int/float accumulators as concat). Scoped
         # per function via visit_FunctionDef.
         self._string_names: set[str] = set()
+        # per-function count of copy operations (.copy() + full-slice [:]) — the
+        # explicit-copy rule only fires with CHAIN evidence (>=2), so a lone
+        # defensive copy (`backup = data.copy()`) is not a false positive.
+        self._copy_count = 0
 
     def visit_Call(self, node: ast.Call) -> None:
         self._check_intermediate_list_chain(node)
@@ -57,9 +61,12 @@ class _DataMovementVisitor(ast.NodeVisitor):
 
     def _visit_scoped(self, node: ast.AST) -> None:
         prev = self._string_names
+        prev_copy = self._copy_count
         self._string_names = _collect_string_names(node)
+        self._copy_count = _count_copies(node)
         self.generic_visit(node)
         self._string_names = prev
+        self._copy_count = prev_copy
 
     def visit_For(self, node: ast.For) -> None:
         self._in_for_loop += 1
@@ -115,15 +122,20 @@ class _DataMovementVisitor(ast.NodeVisitor):
             )
 
     def _check_explicit_copy(self, node: ast.Call) -> None:
-        # x.copy() pattern
-        if isinstance(node.func, ast.Attribute) and node.func.attr == "copy":
-            self.violations.append(
-                StaticViolation(
-                    "explicit-copy",
-                    node.lineno,
-                    f"line {node.lineno}: .copy() — 必要性を確認 (Stream Fusion 観点で省略可能な場合)",
-                )
+        # x.copy() pattern — 証拠ゲート: 単独の防御的コピーは perf smell でないため、
+        # copy 操作が CHAIN (>=2、 .copy()+全スライス) の時のみ flag (FP 削減)。
+        if not (isinstance(node.func, ast.Attribute) and node.func.attr == "copy"):
+            return
+        if self._copy_count < 2:
+            return
+        self.violations.append(
+            StaticViolation(
+                "explicit-copy",
+                node.lineno,
+                f"line {node.lineno}: .copy() — copy chain ({self._copy_count} 段) "
+                "の一部、 Stream Fusion 観点で単一 comprehension に省略可能か確認",
             )
+        )
 
     def _check_string_concat_in_loop(self, stmt: ast.stmt) -> None:
         # for-body 内で `result += x` パターン (string concat)
@@ -198,3 +210,28 @@ def _collect_string_names(scope: ast.AST) -> set[str]:
             ):
                 names.add(node.target.id)
     return names
+
+
+def _is_full_slice(node: ast.AST) -> bool:
+    """`x[:]` (lower/upper/step すべて None) の全スライス = コピー操作か。"""
+    if not isinstance(node, ast.Subscript):
+        return False
+    sl = node.slice
+    return isinstance(sl, ast.Slice) and sl.lower is None and sl.upper is None and sl.step is None
+
+
+def _count_copies(scope: ast.AST) -> int:
+    """関数 scope 内の copy 操作数 (`.copy()` 呼び出し + 全スライス `[:]`)。
+
+    explicit-copy の証拠ゲート用 (chain >=2 のみ flag、 単独防御コピーは FP として除外)。
+    """
+    n = 0
+    for node in ast.walk(scope):
+        is_copy_call = (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "copy"
+        )
+        if is_copy_call or _is_full_slice(node):
+            n += 1
+    return n

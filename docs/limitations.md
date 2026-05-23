@@ -52,7 +52,7 @@ The algebraic-law class alone carries an **extra double gate** the others do not
 | Capability | Layer | Notes |
 |---|---|---|
 | Lint defects: PERF / SIM / FURB / ANN / F / RUF013 | 1 (ruff) | ~16 ms via the ruff binary |
-| Data movement: intermediate-list-chain / dict-keys-list / explicit-copy / string-concat-in-loop | 3 (AST) | + tracemalloc runtime |
+| Data movement: intermediate-list-chain / dict-keys-list / explicit-copy / string-concat-in-loop | 3 (AST) | + tracemalloc runtime. **Evidence-gated** (P3): explicit-copy fires only on a copy *chain* (≥2 ops), not a lone defensive `x.copy()`; string-concat needs str evidence. Known residual FP: `dict-keys-list` flags any `list(x.keys())`, so a deliberate snapshot of a non-dict is a false positive (no type info to gate). |
 | Algebraic-law violations (Monoid / Functor / Monad / …) | 2 (hypothesis) | **only on keyword-named functions** — see ③ |
 | Structured feedback → Claude self-correction | 4 | clean re-measurement (2026-05-22): OFF 0/5 → ON 5/5 clean, ANN-dominated, small-n own tasks (the earlier 20→100%/91.7→100% is retracted — see evidence_summary §1) |
 
