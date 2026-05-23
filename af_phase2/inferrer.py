@@ -113,8 +113,13 @@ def _name_lower(func: Callable) -> str:
 _AF_LAWS_ATTR = "__af_laws__"
 
 
-def law(*law_ids: str) -> Callable[[Callable], Callable]:
-    """関数が満たすべき代数法則を宣言するデコレータ (law_ids は LAW_REGISTRY key)."""
+def law(*law_ids: str, identity: object = None) -> Callable[[Callable], Callable]:
+    """関数が満たすべき代数法則を宣言するデコレータ (law_ids は LAW_REGISTRY key).
+
+    identity を渡すと monoid_identity の単位元として使われる (加法 0 限定を解除):
+      @law("monoid_identity", identity=1)   # 乗法モノイド
+      @law("monoid_identity", identity="")  # 文字列連結モノイド
+    """
 
     def deco(func: Callable) -> Callable:
         declared = list(getattr(func, _AF_LAWS_ATTR, []))
@@ -122,6 +127,8 @@ def law(*law_ids: str) -> Callable[[Callable], Callable]:
             if lid not in declared:
                 declared.append(lid)
         func.__af_laws__ = declared  # type: ignore[attr-defined]
+        if identity is not None:
+            func.__af_law_identity__ = identity  # type: ignore[attr-defined]
         return func
 
     return deco

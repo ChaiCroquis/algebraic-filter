@@ -40,7 +40,12 @@ def complete_domain(func: Callable[..., object]) -> tuple[object, ...] | None:
 
 
 def exhaustive_verify(
-    func: BinaryIntOp, law_id: str, *, bound: int = 5, domain: Sequence[object] | None = None
+    func: BinaryIntOp,
+    law_id: str,
+    *,
+    bound: int = 5,
+    domain: Sequence[object] | None = None,
+    identity: object = 0,
 ) -> dict[str, str] | None:
     """binary 関数の法則を全数で検証. 反例 dict or None.
 
@@ -63,7 +68,7 @@ def exhaustive_verify(
                     return {"law_id": law_id, "counterexample": f"a={a}"}
         elif law_id == "monoid_identity":
             for a in vals:
-                if func(a, 0) != a or func(0, a) != a:
+                if func(a, identity) != a or func(identity, a) != a:
                     return {"law_id": law_id, "counterexample": f"a={a}"}
         elif law_id == "eq_reflexivity":
             for a in vals:

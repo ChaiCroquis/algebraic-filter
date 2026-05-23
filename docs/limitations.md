@@ -90,7 +90,7 @@ On AF's own 46-sample corpus: full-stack detection **28/46 (61%)**.
 | Inferrer keyword coverage (`mean` / `compute` / `process` currently skipped) | small — add keywords (synonyms `add`/`plus`/`total`/`accumulate` already added) |
 | More algebraic laws (beyond the current 13) | small–medium |
 | Type-checking (pyright) | **already available** via the hybrid / Docker mode |
-| SMT proof (CrossHair) of binary laws | **already available** opt-in (`AF_CROSSHAIR`); now covers **7 of 14 law templates** (assoc, semigroup-assoc, commutativity, additive identity, binary idempotence, eq-reflexivity, eq-symmetry — thickened 3→5→7 on 2026-05-22/24). Cost **type-dependent — ~0.3 s for int, ~8 s for str/dict/complex** (measured 2026-05-21). Works on int/float/str/dict/branches/loops/recursion; functor/monad/foldable laws still hypothesis-only |
+| SMT proof (CrossHair) of binary laws | **already available** opt-in (`AF_CROSSHAIR`); now covers **7 of 14 law templates** (assoc, semigroup-assoc, commutativity, monoid identity — additive 0 by default or a declared element via `@law("monoid_identity", identity=e)`, e.g. mult e=1 / str-concat e="" —, binary idempotence, eq-reflexivity, eq-symmetry — thickened 3→5→7 on 2026-05-22/24). Cost **type-dependent — ~0.3 s for int, ~8 s for str/dict/complex** (measured 2026-05-21). Works on int/float/str/dict/branches/loops/recursion; functor/monad/foldable laws still hypothesis-only |
 | Other languages (TypeScript / Rust) | large — different ecosystems; Rust's trait system fits the algebra axis best |
 
 ## ③ Structurally out of scope (measured misses)

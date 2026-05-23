@@ -82,6 +82,9 @@ def _binary_param_type(func: Callable[..., Any]) -> str | None:
     ann = params[0].annotation
     if ann is inspect.Parameter.empty:
         return "int"
+    # PEP 563 (from __future__ import annotations) では注釈が文字列 ("str" 等)。
+    if isinstance(ann, str):
+        return ann
     return getattr(ann, "__name__", "int")
 
 
@@ -120,6 +123,10 @@ def verify(func: Callable[..., Any]) -> list[dict[str, str]]:
     suffix_to_law: dict[str, str] = {}
     for law in laws:
         suffix, params, expr = _LAW_CONTRACT[law]
+        if law == "monoid_identity":
+            # 宣言された単位元 (@law(..., identity=e)) で expr を生成。 既定は加法 0。
+            elem = getattr(func, "__af_law_identity__", 0)
+            expr = f"op(a, {elem!r}) == a and op({elem!r}, a) == a"
         suffix_to_law.setdefault(suffix, law)
         if suffix in seen:
             continue
