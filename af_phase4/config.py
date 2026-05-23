@@ -33,6 +33,29 @@ _SAFE_DEFAULTS: dict[str, Any] = {
 
 _TRUE_TOKENS = ("1", "true", "on", "yes")
 
+# profile = コスト層の束 (= write-time の軽量ガード / CI の重い証明 を 1 スイッチで分割)。
+# write-time: 重い決定論証明 (phase2 sampling / CrossHair / 契約) は OFF = hook を軽く保つ。
+# ci: 重い証明まで全て ON (= CI/CD で時間予算がある層)。
+# 個別スイッチ (env/file) は profile より優先 (= 1 層だけ上書き可)。
+_PROFILES = ("write-time", "ci")
+_DEFAULT_PROFILE = "write-time"
+_PROFILE_DEFAULTS: dict[str, dict[str, bool]] = {
+    "write-time": {"phase2_runtime": False, "crosshair_verify": False},
+    "ci": {"phase2_runtime": True, "crosshair_verify": True},
+}
+
+
+def resolve_profile() -> str:
+    """profile を env AF_PROFILE > file "profile" > 既定 write-time の順で解決."""
+    env = os.environ.get("AF_PROFILE", "").strip().lower()
+    if env in _PROFILES:
+        return env
+    cfg = load_config()
+    val = cfg.get("profile")
+    if isinstance(val, str) and val in _PROFILES:
+        return val
+    return _DEFAULT_PROFILE
+
 
 def _config_path() -> Path:
     override = os.environ.get("AF_CONFIG_PATH", "").strip()
@@ -61,6 +84,10 @@ def resolve_bool(key: str, env_name: str) -> bool:
     cfg = load_config()
     if key in cfg:
         return bool(cfg[key])
+    # profile 既定 (= 個別スイッチ未指定時、 profile が層を束ねて決める)
+    prof_defaults = _PROFILE_DEFAULTS.get(resolve_profile(), {})
+    if key in prof_defaults:
+        return prof_defaults[key]
     return bool(_SAFE_DEFAULTS.get(key, False))
 
 

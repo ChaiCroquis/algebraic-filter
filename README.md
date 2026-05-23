@@ -249,9 +249,36 @@ All risky/heavy layers are opt-in, default OFF, auditable in one file
 
 | Switch | Env | Default | Effect |
 |---|---|---|---|
+| **Profile (tier)** | `AF_PROFILE` | `write-time` | bundles the heavy switches: `write-time` = cheap layers only (fast hook); `ci` = + Phase 2 / CrossHair proofs |
 | Phase 2 runtime (hypothesis) | `AF_HOOK_PHASE2_PBT` | OFF | import + execute the written module to property-test inferred laws |
 | CrossHair proof | `AF_CROSSHAIR` | OFF | SMT-prove assoc/commut of binary functions (deterministic) |
 | Feedback shape | `AF_FEEDBACK_SHAPE` | `verbose` | `verbose` / `skeleton_only` / `minimal` |
+
+Precedence is **individual switch (env/file) > profile > safe default**, so a
+profile can be overridden one layer at a time (e.g. `AF_PROFILE=ci AF_CROSSHAIR=0`).
+
+### Two-tier: write-time hook vs CI/CD gate
+
+Cost splits the layers cleanly. Keep the **write-time hook lean** (cheap layers,
+ms) for in-loop self-correction; run the **heavy deterministic proofs in CI/CD**
+(CrossHair / contracts can take seconds and time out — they fit a per-PR budget,
+not every keystroke).
+
+```bash
+# write-time (the hook): default profile, cheap layers only — already on
+# CI/CD: run the proof tier over changed files, non-zero exit on violations
+AF_PROFILE=ci python scripts/af_ci.py path/to/changed_a.py path/to/changed_b.py
+```
+
+GitHub Actions step (for your project's code):
+```yaml
+- name: algebraic-filter (proof tier)
+  env: { AF_PROFILE: ci }
+  run: python scripts/af_ci.py $(git diff --name-only origin/main... -- '*.py')
+```
+> Note: AF's *own* CI keeps to ruff+pytest; the proof tier is for downstream
+> projects that opt in (CrossHair-in-matrix-CI is left to the adopter to avoid
+> flakiness).
 
 ### Sample / Test corpus ([samples/violations/](samples/violations/))
 - 46 violation samples + 46 ground-truth fixes + [manifest.json](samples/violations/manifest.json) (specification layer with expected_detection / what_to_verify / what_is_the_problem / expected_fix for each sample)

@@ -238,9 +238,34 @@ python scripts/ab_automation_wide.py
 
 | switch | env | default | 効果 |
 |---|---|---|---|
+| **profile (層)** | `AF_PROFILE` | `write-time` | 重いスイッチを束ねる: `write-time`=安価層のみ (hook 軽量) / `ci`=+ Phase 2 / CrossHair 証明 |
 | Phase 2 runtime (hypothesis) | `AF_HOOK_PHASE2_PBT` | OFF | 書込 module を import 実行し推論法則を property test |
 | CrossHair proof | `AF_CROSSHAIR` | OFF | binary 関数の結合/可換律を SMT 証明 (決定論) |
 | feedback shape | `AF_FEEDBACK_SHAPE` | `verbose` | `verbose` / `skeleton_only` / `minimal` |
+
+優先順位は **個別スイッチ (env/file) > profile > 安全 default** で、 profile を 1 層ずつ
+上書き可 (例: `AF_PROFILE=ci AF_CROSSHAIR=0`)。
+
+### 二層: write-time hook と CI/CD gate
+
+コストで層が綺麗に割れる。 **write-time hook は安価層で軽く** (ms、 ループ内自己修正)、
+**重い決定論証明は CI/CD で** (CrossHair/契約は秒オーダー・timeout あり = PR 単位の予算向き、
+毎キーストロークには不向き)。
+
+```bash
+# write-time (hook): 既定 profile、 安価層のみ — 既に有効
+# CI/CD: 変更ファイルに証明層を適用、 違反で exit 非ゼロ
+AF_PROFILE=ci python scripts/af_ci.py path/to/changed_a.py path/to/changed_b.py
+```
+
+GitHub Actions の step 例 (= 利用者プロジェクト側):
+```yaml
+- name: algebraic-filter (proof tier)
+  env: { AF_PROFILE: ci }
+  run: python scripts/af_ci.py $(git diff --name-only origin/main... -- '*.py')
+```
+> 注: AF 自身の CI は ruff+pytest のまま。 proof tier は opt-in する下流プロジェクト用
+> (CrossHair の matrix CI 投入は flaky 回避のため採用者に委ねる)。
 
 ### Sample / Test 集 ([samples/violations/](samples/violations/))
 - 46 違反サンプル + 46 ground truth + [manifest.json](samples/violations/manifest.json) (= 仕様層、 各 sample の expected_detection / what_to_verify / what_is_the_problem / expected_fix を articulate)
