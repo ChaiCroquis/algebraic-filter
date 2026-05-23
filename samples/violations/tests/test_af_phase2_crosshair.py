@@ -129,3 +129,35 @@ def test_crosshair_binary_idempotence_fp_zero() -> None:
         assert all(v["law_id"] != "idempotence" for v in verify(mymax)), "idempotent max: no FP"
     finally:
         os.environ.pop("AF_CROSSHAIR", None)
+
+
+def test_crosshair_agrees_with_exhaustive_oracle() -> None:
+    """非チェリーピック: CrossHair の commutativity 判定が独立 oracle (全数) と一致.
+
+    正しい演算 (add) と非可換演算 (sub / left-biased) の集合で、 CrossHair と
+    exhaustive_verify (別経路の決定論検査) の verdict が全件一致することを固定。
+    1 関数の手書きでなく、 正/誤両方を含む集合で照合 = favorable でない。
+    """
+    from af_phase2.exhaustive import exhaustive_verify
+    from af_phase2.inferrer import law
+
+    os.environ["AF_CROSSHAIR"] = "1"
+    try:
+        @law("commutativity")
+        def op_add(a: int, b: int) -> int:
+            return a + b
+
+        @law("commutativity")
+        def op_sub(a: int, b: int) -> int:
+            return a - b
+
+        @law("commutativity")
+        def op_left(a: int, b: int) -> int:
+            return a
+
+        for f in (op_add, op_sub, op_left):
+            ch = any(v["law_id"] == "commutativity" for v in verify(f))
+            oracle = exhaustive_verify(f, "commutativity") is not None
+            assert ch == oracle, f"{f.__name__}: CrossHair={ch} oracle={oracle}"
+    finally:
+        os.environ.pop("AF_CROSSHAIR", None)
